@@ -1,4 +1,3 @@
-
 using G9.API;
 
 var app = Startup.Build(args);

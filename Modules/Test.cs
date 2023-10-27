@@ -1,6 +1,10 @@
 using System.Text.Json;
 using Npgsql;
 
+
+//TODO: connstring iš Doker ENV
+//TODO: 
+
 namespace G9{
 
 /// <summary>
