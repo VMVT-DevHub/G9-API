@@ -1,36 +1,78 @@
-using G9;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.OpenApi.Any;
-using System.Text.Json;
+
+using G9.API;
+
+var app = Startup.Build(args);
+
+app.MapGet("/",()=>new G9.Models.Rodiklis()).ExcludeFromDescription();
 
 
-var builder = WebApplication.CreateBuilder(args);
+app.MapGet("/api/user",Auth.Get).Swagger(
+	"Informacija apie prisijungusį vartotoją",
+    "Gaunamas objektas"
+).Produces<G9.Models.Vartotojas>(200);
+
+app.MapGet("/api/login",Auth.Login).Swagger(
+	"Prisijungti per VIISP",
+    "Vartotojas peradresuojamas"
+).Produces(302);
 
 
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-var app = builder.Build();
-
-if (app.Environment.IsDevelopment()){
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
-app.MapGet("/",()=>"Ok");
-
-app.MapGet("/test", async (HttpContext ctx) =>{
-    //var streamResponse = await httpClient.GetStreamAsync("posts");
-    //return Results.Stream(streamResponse, "application/json");
-	await ctx.Response.WriteAsync("labas 1");
-}).WithDescription("Some Method Description").WithOpenApi(); //.ExcludeFromDescription();
 
 
-app.MapGet("/test2", G9.APIS.GoodMinimalApi).WithOpenApi(o => new(o){	
-    Summary = "Reads text from PDF",
-    Description = "This API returns all text in PDF document"
-}).Produces<List<TestItem>>(200); //.ExcludeFromDescription();
+app.MapGet("/api/deleg",Delegavimas.Get).Swagger(
+	"Gauti visas prisijungusio juridinio asmens deleguotų asmenų sąrašą.",
+    "Gaunamas objektas"
+).Produces<G9.Models.Delegavimas>(200);
+
+app.MapPost("/api/deleg/{gvts}",Delegavimas.Set).Swagger(	
+	"Pridėti deleguojamą asmenį",
+	"Gaunamas objektas"
+).Produces(204);
+
+app.MapDelete("/api/deleg/{gvts}",Delegavimas.Del).Swagger(	
+	"Trinti deleguojamą asmenį",
+	"Gaunamas objektas"
+).Produces(204);
+
+
+app.MapGet("/api/declar/{gvts}/{metai}",Deklaravimas.Get).Swagger(	
+	"Gauti deklaruojamų rodiklių sąrašą.",
+	"Gaunamas objektas"
+).Produces<G9.Models.Deklaravimas>(200);
+
+app.MapPost("/api/declar/{gvts}/{metai}",Deklaravimas.Set).Swagger(	
+	"Deklaruoti metus",
+	"Gaunamas objektas"
+).Produces(204);
+
+
+
+app.MapGet("/api/veiklos",Veiklos.Get).Swagger(	
+	"Gauti visas prisijungusio vartotojo G9 veiklas.",
+	"Gaunamas objektas"
+).Produces<G9.Models.Veiklos>(200);
+
+
+app.MapGet("/api/rodikliai",Rodikliai.List).Swagger(	
+	"Gauti visus G9 rodiklius.",
+	"Gaunamas objektas"
+).Produces<G9.Models.Rodikliai>(200);
+
+
+app.MapGet("/api/rodiklis/{gvts}/{metai}",Rodikliai.Get).Swagger(	
+	"Gauti deklaruojamus metinius rodiklius veiklai",
+	"(Nenaudojamas)"
+).Produces<G9.Models.Rodikliai>(200);
+
+app.MapPost("/api/rodiklis/{gvts}/{metai}",Rodikliai.Set).Swagger(	
+	"Išsaugiti rodiklius veiklai",
+	"Siunčiamas objektas"
+).Produces<G9.Models.Rodikliai>(200);
+
+app.MapDelete("/api/rodiklis/{gvts}/{metai}",Rodikliai.Del).Swagger(	
+	"Pašalinti rodiklį",
+	""
+).Produces(204);
 
 
 app.Run();

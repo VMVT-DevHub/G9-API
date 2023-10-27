@@ -1,26 +1,18 @@
-using System.Data;
 using System.Text.Json;
-using Microsoft.AspNetCore.Mvc.ModelBinding.Binders;
-using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
 namespace G9{
 
-	public class TestItem  {
-		public long Id { get; set; }
-		public string? Name { get; set; }
-		public string? Title { get; set; }
-	}
-
-	public class ItemDb: DbContext {
-		public ItemDb(DbContextOptions<ItemDb> options): base(options) {
-
-		}
-	public DbSet<TestItem> Notes => Set<TestItem>();
-	}
-
-
+/// <summary>
+/// a
+/// </summary>
 	public static class APIS{
+		/// <summary>
+		/// a
+		/// </summary>
+		/// <param name="ctx">b</param>
+		/// <param name="ct">c</param>
+		/// <returns>d</returns>
 		public static async Task GoodMinimalApi(HttpContext ctx,CancellationToken ct){
 			ctx.Response.ContentType="application/json";
 			//await ctx.Response.WriteAsync("[{\"name\":\"Test Function\"}]",ct);
@@ -47,6 +39,14 @@ namespace G9{
 			writer.WriteEndArray();
 			writer.WriteEndObject();
 		}
+		/// <summary>
+		/// a
+		/// </summary>
+		/// <param name="rdr">b</param>
+		/// <param name="wrt">c</param>
+		/// <param name="ct">d</param>
+		/// <param name="flush">e</param>
+		/// <returns>f</returns>
 
 		public static async Task Loop(NpgsqlDataReader rdr, Utf8JsonWriter wrt,CancellationToken ct,int flush=20){
 			var act= new List<Action<int>>();
@@ -60,7 +60,13 @@ namespace G9{
 				if(cnt--<1){ wrt.Flush(); cnt=flush; }
 			}
 		}
-
+/// <summary>
+/// a
+/// </summary>
+/// <param name="rdr">b</param>
+/// <param name="wrt">c</param>
+/// <param name="i">d</param>
+/// <returns>e</returns>
 		public static Action<int> GetAct(NpgsqlDataReader rdr, Utf8JsonWriter wrt, int i) {
 			var tp= rdr.GetFieldType(i); var nm= rdr.GetName(i);
 			if(tp==typeof(bool)) return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNull(nm); else wrt.WriteBoolean(nm,rdr.GetBoolean(i));};
