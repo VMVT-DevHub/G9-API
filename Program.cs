@@ -15,6 +15,11 @@ app.MapGet("/api/login",Auth.Login).Swagger(
     "Vartotojas peradresuojamas"
 ).Produces(302);
 
+app.MapGet("/api/login/evartai",Auth.Evartai).Swagger(
+	"VIISP autorizacijos grąžinimas",
+    "Vartotojas peradresuojamas"
+).Produces(200);
+
 
 
 

@@ -3,7 +3,7 @@ using Npgsql;
 
 
 //TODO: connstring iš Doker ENV
-//TODO: 
+//TODO: Duombazės pasiimimo/padavimo šablonas
 
 namespace G9{
 
