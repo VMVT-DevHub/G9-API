@@ -14,10 +14,10 @@ public class Auth {
 	private static ConcurrentDictionary<Guid, AuthRequest> Redirect { get; set; } = new();
 
 	/// <summary>DDOS apsauga nuo perdidelio kiekio užklausų iš vieno IP</summary>
-	/// <param name="req">Vartotojo užklausa</param>
-	private static void LockIP(HttpContext req) {
+	/// <param name="ctx">Vartotojo užklausa</param>
+	private static void LockIP(HttpContext ctx) {
 		//TODO: Find correct IP (unbalanced);
-		var ip = req.Connection.RemoteIpAddress?.ToString();
+		var ip = ctx.GetIP();
 		if(!string.IsNullOrEmpty(ip)){
 			if(!LockList.TryGetValue(ip, out var lck)){ lck = new(); LockList.TryAdd(ip, lck); }
 			lock(lck){ lck.LastLock=DateTime.UtcNow; lck.Count++; var dly = Config.GetLong("Auth", "LockDelay", 0); if(dly>0) Thread.Sleep((int)dly); }
@@ -25,8 +25,7 @@ public class Auth {
 				NextClean = DateTime.UtcNow.AddSeconds(Config.GetLong("Auth", "LockCleanInterval", 300));
 				var cleanint = DateTime.UtcNow.AddSeconds(Config.GetLong("Auth", "LockCleanDelay", 300));
 				var clean = new List<string>();
-				foreach(var i in LockList) if(i.Value.LastLock < cleanint) clean.Add(i.Key);
-			
+				foreach(var i in LockList) if(i.Value.LastLock < cleanint) clean.Add(i.Key);			
 				if(clean.Count>0){
 					var report = Config.GetLong("Auth","LockReport",10);
 					foreach(var i in clean)  {
@@ -39,9 +38,7 @@ public class Auth {
 				foreach(var i in Redirect) if(i.Value.Timeout < DateTime.UtcNow) cleanr.Add(i.Key);
 				foreach(var ri in cleanr) Redirect.TryRemove(ri, out _);
 			}
-		} else {
-			//TODO: throw something;
-		}
+		} else { /* TODO: throw something; */ }
 	}
 
 	static Auth() {
@@ -56,86 +53,76 @@ public class Auth {
 	/// <summary>Vartotojo autorizacijos iniciavimas</summary>
 	/// <param name="ctx"></param>
 	/// <param name="ct"></param>
-	public static async Task<AuthRequest?> GetAuth(HttpContext ctx, CancellationToken ct){
+	public static async Task<AuthRequest> GetAuth(HttpContext ctx, CancellationToken ct){
 		LockIP(ctx);
 		if(!ct.IsCancellationRequested) {
 			var msg = new StringContent($"{{\"host\":\"{Config.GetVal("Auth","Redirect","http://localhost:5000/api/login")}\"}}", new MediaTypeHeaderValue("application/json"));			
 			try {
 				using var response = await HClient.PostAsync(Config.GetVal("Auth","GetSignin","/auth/evartai/sign"), msg, ct);
+				var rsp = await response.Content.ReadAsStringAsync(ct);
 				if(response.IsSuccessStatusCode){
-					using var rsp = await response.Content.ReadAsStreamAsync(ct);
 					var tck = JsonSerializer.Deserialize<AuthTicket>(rsp);					
 					if(tck?.Ticket is not null){
-						var ath = new AuthRequest((Guid)tck.Ticket) { Return = ctx.Request.Query.TryGetValue("r", out var r)?r:""};
-						Redirect.TryAdd(ath.ID,ath);
+						var ath = new AuthRequest((Guid)tck.Ticket) { IP=ctx.GetIP(), Return = ctx.Request.Query.TryGetValue("r", out var r) ? r : "" };
+						Redirect.TryAdd(ath.Ticket??new(),ath);
 						ctx.Response.Redirect(tck.Url??"/");
 						return ath;
-					}
-					else { Console.WriteLine("Fail: " + rsp); }
-				} else { 
-					var rsp = await response.Content.ReadAsStringAsync(ct);
-					Console.WriteLine("Fail: " + rsp); 
-				}
-			}
-			catch (Exception ex) { Console.WriteLine("Fail: " + ex.Message); }
+					} else return new (104,"Peradresavimo kodo klaida",rsp);
+				} else return new (103,"Peradresavimo klaida",rsp);
+			} catch (Exception ex) { return new (102,"Sujungimo klaida",ex.Message); }
 		}
-		return null;
+		return new(0);
 	}
 
 	/// <summary>Vartotojo autorizacijos tikrinimas</summary>
 	/// <param name="ticket">Autorizacijos kodas</param>
+	/// <param name="ctx"></param>
 	/// <param name="ct"></param>
-	public static async Task<AuthUser?> GetUser(Guid ticket, CancellationToken ct){
+	public static async Task<AuthRequest> GetToken(Guid ticket, HttpContext ctx, CancellationToken ct){
 		if(Redirect.TryRemove(ticket, out var tck)){
-			if(tck.Timeout>DateTime.UtcNow){
-				var m = new StringContent($"{{\"ticket\":\"{ticket}\",\"defaultGroupId\":null,\"refresh\":false}}",new MediaTypeHeaderValue("application/json"));			
-    			
-				try {
-					using var response = await HClient.PostAsync(Config.GetVal("Auth","GetLogin","/auth/evartai/login"), m, ct);
-					if(response.IsSuccessStatusCode){
-						using var rsp = await response.Content.ReadAsStreamAsync(ct);
-						var tkn = JsonSerializer.Deserialize<AuthToken>(rsp);						
-						if(!string.IsNullOrEmpty(tkn?.Token)){
-							return await GetUserDetails(tkn.Token,ct);
-						}
-						else { Console.WriteLine("Fail: " + rsp); }
-					} else { 
+			if(tck.IP==ctx.GetIP()){
+				if(tck.Timeout>DateTime.UtcNow){
+					var m = new StringContent($"{{\"ticket\":\"{ticket}\",\"defaultGroupId\":null,\"refresh\":false}}",new MediaTypeHeaderValue("application/json"));			
+					try {
+						using var response = await HClient.PostAsync(Config.GetVal("Auth","GetLogin","/auth/evartai/login"), m, ct);
 						var rsp = await response.Content.ReadAsStringAsync(ct);
-						Console.WriteLine("Fail: " + rsp); 
-					}
-				}
-				catch (Exception ex) { Console.WriteLine("Fail: " + ex.Message); }
-			} else { Console.WriteLine("Fail: Timeout "+ tck.Timeout); }
-		} else { Console.WriteLine("Fail: " + ticket); }
-		return null;
+						if(response.IsSuccessStatusCode){
+							var tkn = JsonSerializer.Deserialize<AuthToken>(rsp);						
+							if(!string.IsNullOrEmpty(tkn?.Token)){ 
+								tck.Token=tkn.Token; return tck; 
+							} else return new(110,"Negalimas prisijungimas",rsp);
+						} else return new(109,"Autorizacijos klaida",rsp);
+					} catch (Exception ex) { return new(108,"Prisijungimo validacijos klaida",ex.Message); }
+				} else return new(107,"Baigėsi prisijungimui skirtas laikas",tck.Timeout.ToString("u"));
+			} else return new(106,"Baigėsi prisijungimui skirtas laikas",tck.Timeout.ToString("u"));
+		} else return new(105,"Neatpažinta autorizacija",ticket.ToString());
+	}
+
+	/// <summary>Sesijos sukūrimas</summary>
+	/// <param name="usr"></param>
+	/// <param name="ctx"></param>
+	/// <returns></returns>
+	public static void SessionInit(AuthUser usr, HttpContext ctx){
+		Session.CreateSession(new User(){ AK = usr.AK, Email=usr.Email, FName=usr.FName, LName=usr.LName, Phone=usr.Phone, Type=usr.Type }, ctx);
 	}
 
 	/// <summary>Vartotojo autorizacijos detalės</summary>
-	/// <param name="token">Vartotojo autorizacijos raktas</param>
+	/// <param name="req">Autorizacijos užklausa</param>
 	/// <param name="ct"></param>
-	public static async Task<AuthUser?> GetUserDetails(string token,CancellationToken ct){
+	public static async Task<AuthRequest> GetUserDetails(AuthRequest req, CancellationToken ct){
 		using var msg = new HttpRequestMessage(HttpMethod.Post, Config.GetVal("Auth","GetUser","/api/users/me"));
-		msg.Headers.Authorization = new("Bearer",token);
+		msg.Headers.Authorization = new("Bearer",req.Token);
 		try {
-			using var response = await HClient.SendAsync(msg,ct);		
+			using var response = await HClient.SendAsync(msg,ct);
+			var rsp = await response.Content.ReadAsStringAsync(ct);
 			if(response.IsSuccessStatusCode){
-				using var rsp = await response.Content.ReadAsStreamAsync(ct);	
-				var usr = JsonSerializer.Deserialize<AuthUser>(rsp);						
-				Console.WriteLine("User: " + rsp);
-				
-				if(!string.IsNullOrEmpty(usr?.AK)){							
-					return usr;
-				}
-				else { Console.WriteLine("Fail: " + rsp); }
-			} else { 
-				var rsp = await response.Content.ReadAsStringAsync(ct);
-				Console.WriteLine("Fail: " + rsp); 
-			}
+				var usr = JsonSerializer.Deserialize<AuthUser>(rsp);
+				if(!string.IsNullOrEmpty(usr?.AK)){ req.User=usr; return req; }
+				else return new(113,"Vartotojas neatpažintas",rsp);
+			} else return new(112,"Vartotojas nerastas",rsp);
 		}
-		catch (Exception ex) { Console.WriteLine("Fail: " + ex.Message); }
-		return null;
+		catch (Exception ex) { return new(111,"Vartotojo informacijos klaida",ex.Message); }
 	}
-
 }
 
 /// <summary>Autorizacijos apsauga</summary>
@@ -149,25 +136,49 @@ public class AuthLock {
 }
 
 /// <summary>Autorizacijos užklausa</summary>
-public class AuthRequest{
+public class AuthRequest {
 	/// <summary>Autorizacijos identifikavimo numeris</summary>
-	public Guid ID { get; set; }
+	public Guid? Ticket { get; set; }
+	/// <summary>Vartotojo IP adresas</summary>
+	public string? IP { get; set; }
 	/// <summary>Vartotojo peradresavimas po autorizacijos</summary>
 	public string? Return { get; set; }
 	/// <summary>Vartotojo autorizacijos laiko limitas</summary>
 	public DateTime Timeout { get; set; }
+	/// <summary>Vartotojo autorizacijos raktas</summary>
+	public string? Token { get; set; }
+	/// <summary>Vartotojo duomenys</summary>
+	public AuthUser? User { get; set; }
+	/// <summary>Klaidos žinutės kodas</summary>
+	public int Code { get; set; }
+	/// <summary>Statuso žinutė</summary>
+	public string? Message { get; set; }
+	/// <summary>Klaidos informacija</summary>
+	public string? ErrorData { get; set; }
 	
 	/// <summary>Užklausos konstruktorius</summary>
 	/// <param name="ticket">Autorizacijos identifikavimo numeris</param>
 	public AuthRequest(Guid ticket){
-		ID=ticket;
+		Ticket=ticket;
 		Timeout=DateTime.UtcNow.AddSeconds(Config.GetLong("Auth", "Timeout", 300));
+	}
+	/// <summary>Bazinis konstruktorius</summary>
+	public AuthRequest(int code, string? msg="", string? data=null){ Code=code; Message=msg; ErrorData=data; Return=$"/klaida?id={code}&msg={msg}"; }
+	
+	/// <summary>Reportuoti klaidą</summary>
+	/// <param name="ctx"></param>
+	/// <returns></returns>
+	public AuthRequest Report(HttpContext ctx){
+		new DBExec("INSERT INTO app.log_error (log_code,log_msg,log_data,log_ip) VALUES (@code,@msg,@data,@ip);",
+			("@code",Code),("@msg",Message),("@data",ErrorData),("@ip",ctx.GetIP())).Execute();
+		ctx.Response.Redirect(Return??"/klaida");
+		return this;
 	}
 }
 
 
 /// <summary>BIIP Vartotojo detalės</summary>
-public class AuthUser{
+public class AuthUser {
 	/// <summary>BIIP ID</summary>
 	[JsonPropertyName("id")] public int ID { get; set; }
 	/// <summary>AK</summary>

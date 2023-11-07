@@ -1,7 +1,7 @@
 using System.Text.Json;
 using G9.Models;
 
-namespace G9.API;
+namespace App.API;
 
 
 public static class Veiklos {

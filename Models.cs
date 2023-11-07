@@ -58,6 +58,10 @@ public class Rodiklis {
 	public string? Unit { get; set; }
 	/// <summary>Aprašymas</summary>
 	public string? Descr { get; set; }
+
+	public Rodiklis (){
+		Console.WriteLine("EXEJUTING");
+	}
 }
 
 /// <summary>Ūkio subjekto informacija</summary>

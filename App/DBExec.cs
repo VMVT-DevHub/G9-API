@@ -1,12 +1,11 @@
-using System.Diagnostics;
-using System.Runtime.CompilerServices;
+
 using System.Text.Json;
 using Npgsql;
-using Npgsql.Replication;
 
 
 namespace App;
 
+/// <summary>Postgres konektorius</summary>
 public class DBExec : IDisposable {
 	private static string ConnString { get; set; } = "User ID=postgres;Password=postgres;Server=localhost;Port=5002;Database=postgres;Integrated Security=true;Pooling=true;";
 	/// <summary>Duomenų bazės užklausų atvaizdavimas konsolėje</summary>
@@ -61,20 +60,20 @@ public class DBExec : IDisposable {
 
 	/// <summary>Vykdyti SQL užklausą</summary>
 	/// <returns>Įrašų skaičius</returns>
-	public int Execute() => Command(SQL).ExecuteNonQuery();
+	public int Execute() { var ret = Command(SQL).ExecuteNonQuery(); Dispose(); return ret; }
 
 	/// <summary>Vykdyti SQL užklausą</summary>
 	/// <returns>Įrašų skaičius</returns>
-	public async Task<int> Execute(CancellationToken ct) => await(await CommandAsync(SQL,ct)).ExecuteNonQueryAsync(ct);
+	public async Task<int> Execute(CancellationToken ct) { var ret = await(await CommandAsync(SQL,ct)).ExecuteNonQueryAsync(ct); Dispose(); return ret;}
 	
 	
 	/// <summary>Vykdyti SQL užklausą</summary>
 	/// <returns>Įrašų skaičius</returns>
-	public object? ExecuteScalar() => Command(SQL).ExecuteScalar();
+	public object? ExecuteScalar() { var ret = Command(SQL).ExecuteScalar(); Dispose(); return ret;}
 
 	/// <summary>Vykdyti SQL užklausą</summary>
 	/// <returns>Įrašų skaičius</returns>
-	public async Task<object?> ExecuteScalar(CancellationToken ct) => await(await CommandAsync(SQL,ct)).ExecuteScalarAsync(ct);
+	public async Task<object?> ExecuteScalar(CancellationToken ct) { var ret = await(await CommandAsync(SQL,ct)).ExecuteScalarAsync(ct); Dispose(); return ret; }
 
 
 	// To detect redundant calls
@@ -109,6 +108,8 @@ public static class DBExtensions {
 	public static DateTime? GetDateTimeN(this NpgsqlDataReader rdr,int id) => rdr.IsDBNull(id)?null:rdr.GetDateTime(id);
 	/// <summary></summary><param name="rdr"></param><param name="id"></param><returns></returns>
 	public static double? GetDoubleN(this NpgsqlDataReader rdr,int id) => rdr.IsDBNull(id)?null:rdr.GetDouble(id);
+	/// <summary></summary><param name="rdr"></param><param name="id"></param><returns></returns>
+	public static T? GetObject<T>(this NpgsqlDataReader rdr,int id) => rdr.IsDBNull(id)?default:JsonSerializer.Deserialize<T>(rdr.GetString(id));
 }
 
 /// <summary>Duomenų bazės užklausos parametrai</summary>

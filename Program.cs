@@ -1,14 +1,16 @@
-using G9.API;
+
+using App;
+using App.API;
 
 var app = Startup.Build(args);
 
-app.MapGet("/",()=>new G9.Models.Rodiklis()).ExcludeFromDescription();
+app.MapGet("/",()=>new G9.Models.Rodiklis()).ExcludeFromDescription().AddEndpointFilter<RequireLogin>();
 
 
 app.MapGet("/api/user",Auth.Get).Swagger(
 	"Informacija apie prisijungusį vartotoją",
     "Gaunamas objektas"
-).Produces<G9.Models.Vartotojas>(200);
+).Produces<G9.Models.Vartotojas>(200).Produces<E401>(401);
 
 app.MapGet("/api/login",Auth.Login).Swagger(
 	"Prisijungti per VIISP",
@@ -18,7 +20,7 @@ app.MapGet("/api/login",Auth.Login).Swagger(
 app.MapGet("/api/login/evartai",Auth.Evartai).Swagger(
 	"VIISP autorizacijos grąžinimas",
     "Vartotojas peradresuojamas"
-).Produces(200);
+).Produces(302);
 
 
 
