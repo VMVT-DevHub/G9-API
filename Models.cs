@@ -19,7 +19,7 @@ public class Delegavimas {
 	/// <summary>Geriamojo vandens tiekimo sistemos priklausančios ūkio subjektams</summary>
 	public List<GVTS>? GVTS { get; set; }
 	/// <summary>Asmenys galintys deklaruoti GVTS rodmenis</summary>
-	public List<Asmuo>? Year { get; set; }
+	public List<Asmuo>? Users { get; set; }
 }
 
 
@@ -107,6 +107,8 @@ public class Asmuo {
 	public string? FName { get; set; }
 	/// <summary>Pavardė</summary>
 	public string? LName { get; set; }
+	/// <summary>GVTS administratorius</summary>
+	public bool Admin { get; set; }
 }
 
 /// <summary>Prisijungusio vartotojo informacija</summary>

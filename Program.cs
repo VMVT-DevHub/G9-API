@@ -4,13 +4,13 @@ using App.API;
 
 var app = Startup.Build(args);
 
-app.MapGet("/",()=>new G9.Models.Rodiklis()).ExcludeFromDescription().AddEndpointFilter<RequireLogin>();
+app.MapGet("/",()=>new G9.Models.Rodiklis()).ExcludeFromDescription();
 
 
 app.MapGet("/api/user",Auth.Get).Swagger(
 	"Informacija apie prisijungusį vartotoją",
     "Gaunamas objektas"
-).Produces<G9.Models.Vartotojas>(200).Produces<E401>(401);
+).Produces<G9.Models.Vartotojas>(200).Produces<E401>(401).AddEndpointFilter(Require.Login);
 
 app.MapGet("/api/login",Auth.Login).Swagger(
 	"Prisijungti per VIISP",
@@ -28,7 +28,8 @@ app.MapGet("/api/login/evartai",Auth.Evartai).Swagger(
 app.MapGet("/api/deleg",Delegavimas.Get).Swagger(
 	"Gauti visas prisijungusio juridinio asmens deleguotų asmenų sąrašą.",
     "Gaunamas objektas"
-).Produces<G9.Models.Delegavimas>(200);
+).Produces<G9.Models.Delegavimas>(200).AddEndpointFilter(Require.Admin);
+
 
 app.MapPost("/api/deleg/{gvts}",Delegavimas.Set).Swagger(	
 	"Pridėti deleguojamą asmenį",
@@ -48,7 +49,7 @@ app.MapGet("/api/declar/{gvts}/{metai}",Deklaravimas.Get).Swagger(
 
 app.MapPost("/api/declar/{gvts}/{metai}",Deklaravimas.Set).Swagger(	
 	"Deklaruoti metus",
-	"Gaunamas objektas"
+	"Tuščias atsakymas"
 ).Produces(204);
 
 

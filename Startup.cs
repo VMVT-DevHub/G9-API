@@ -6,6 +6,7 @@ public static class Startup {
 	/// <returns>WebApplication</returns>
 	public static WebApplication Build(string[] args){
 		var builder = WebApplication.CreateBuilder(args);
+		builder.WebHost.UseKestrel(option => option.AddServerHeader = false);
 
 		#if DEBUG //Disable Swagger
 			builder.Services.AddEndpointsApiExplorer();

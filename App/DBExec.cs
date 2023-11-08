@@ -7,7 +7,7 @@ namespace App;
 
 /// <summary>Postgres konektorius</summary>
 public class DBExec : IDisposable {
-	private static string ConnString { get; set; } = "User ID=postgres;Password=postgres;Server=localhost;Port=5002;Database=postgres;Integrated Security=true;Pooling=true;";
+	private static string ConnString { get; set; } = "User ID=g9_app;Password=g9_app;Server=localhost;Port=5002;Database=G9;Integrated Security=true;Pooling=true;";
 	/// <summary>Duomenų bazės užklausų atvaizdavimas konsolėje</summary>
 	public static bool Debug { get; set; } = Config.GetBool("Config","DebugDB",false);
 	/// <summary>Duomenų bazės užklausa</summary>

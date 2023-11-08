@@ -20,7 +20,7 @@ public class Auth {
 		var ip = ctx.GetIP();
 		if(!string.IsNullOrEmpty(ip)){
 			if(!LockList.TryGetValue(ip, out var lck)){ lck = new(); LockList.TryAdd(ip, lck); }
-			lock(lck){ lck.LastLock=DateTime.UtcNow; lck.Count++; var dly = Config.GetLong("Auth", "LockDelay", 0); if(dly>0) Thread.Sleep((int)dly); }
+			lock(lck){ lck.LastLock=DateTime.UtcNow; lck.Count++; var dly = Config.GetLong("Auth", "LockDelay", 1); if(dly>0) Thread.Sleep((int)dly); }
 			if(NextClean<DateTime.UtcNow){
 				NextClean = DateTime.UtcNow.AddSeconds(Config.GetLong("Auth", "LockCleanInterval", 300));
 				var cleanint = DateTime.UtcNow.AddSeconds(Config.GetLong("Auth", "LockCleanDelay", 300));
@@ -30,7 +30,10 @@ public class Auth {
 					var report = Config.GetLong("Auth","LockReport",10);
 					foreach(var i in clean)  {
 						if(LockList.TryRemove(i, out var itm)){
-							if(itm.Count>=report) { /* Log multiple logins from same IP */ } //TODO: Report here
+							if(itm.Count>=report) { 
+								new DBExec("INSERT INTO app.log_error (log_code,log_msg,log_data,log_ip) VALUES (1015,'Too many logins',@data,@ip);",
+									("@data",JsonSerializer.Serialize(itm)),("@ip",ip)).Execute();
+							}
 						}
 					}
 				}
@@ -67,9 +70,9 @@ public class Auth {
 						Redirect.TryAdd(ath.Ticket??new(),ath);
 						ctx.Response.Redirect(tck.Url??"/");
 						return ath;
-					} else return new (104,"Peradresavimo kodo klaida",rsp);
-				} else return new (103,"Peradresavimo klaida",rsp);
-			} catch (Exception ex) { return new (102,"Sujungimo klaida",ex.Message); }
+					} else return new (1004,"Peradresavimo kodo klaida",rsp);
+				} else return new (1003,"Peradresavimo klaida",rsp);
+			} catch (Exception ex) { return new (1002,"Sujungimo klaida",ex.Message); }
 		}
 		return new(0);
 	}
@@ -90,20 +93,30 @@ public class Auth {
 							var tkn = JsonSerializer.Deserialize<AuthToken>(rsp);						
 							if(!string.IsNullOrEmpty(tkn?.Token)){ 
 								tck.Token=tkn.Token; return tck; 
-							} else return new(110,"Negalimas prisijungimas",rsp);
-						} else return new(109,"Autorizacijos klaida",rsp);
-					} catch (Exception ex) { return new(108,"Prisijungimo validacijos klaida",ex.Message); }
-				} else return new(107,"Baigėsi prisijungimui skirtas laikas",tck.Timeout.ToString("u"));
-			} else return new(106,"Baigėsi prisijungimui skirtas laikas",tck.Timeout.ToString("u"));
-		} else return new(105,"Neatpažinta autorizacija",ticket.ToString());
+							} else return new(1010,"Negalimas prisijungimas",rsp);
+						} else return new(1009,"Autorizacijos klaida",rsp);
+					} catch (Exception ex) { return new(1008,"Prisijungimo validacijos klaida",ex.Message); }
+				} else return new(1007,"Baigėsi prisijungimui skirtas laikas",tck.Timeout.ToString("u"));
+			} else return new(1006,"Neteisingas prisijungimo adresas",tck.Timeout.ToString("u"));
+		} else return new(1005,"Neatpažinta autorizacija",ticket.ToString());
 	}
 
 	/// <summary>Sesijos sukūrimas</summary>
-	/// <param name="usr"></param>
+	/// <param name="req"></param>
 	/// <param name="ctx"></param>
+	/// <param name="ct"></param>
 	/// <returns></returns>
-	public static void SessionInit(AuthUser usr, HttpContext ctx){
-		Session.CreateSession(new User(){ AK = usr.AK, Email=usr.Email, FName=usr.FName, LName=usr.LName, Phone=usr.Phone, Type=usr.Type }, ctx);
+	public static async Task<AuthRequest> SessionInit(AuthRequest req, HttpContext ctx, CancellationToken ct){
+		var usr=req.User;
+
+		if(usr is not null && long.TryParse(usr.AK, out var ak)){
+			if(usr.Type == "USER"){
+				
+			}
+			Session.CreateSession(new User(){ AK = ak, Email=usr.Email, FName=usr.FName, LName=usr.LName, Phone=usr.Phone, Type=usr.Type }, ctx);
+			return req;
+		}
+		return new(1014,"Vartotojo kodas neatpažintas",JsonSerializer.Serialize(usr));
 	}
 
 	/// <summary>Vartotojo autorizacijos detalės</summary>
@@ -118,10 +131,10 @@ public class Auth {
 			if(response.IsSuccessStatusCode){
 				var usr = JsonSerializer.Deserialize<AuthUser>(rsp);
 				if(!string.IsNullOrEmpty(usr?.AK)){ req.User=usr; return req; }
-				else return new(113,"Vartotojas neatpažintas",rsp);
-			} else return new(112,"Vartotojas nerastas",rsp);
+				else return new(1013,"Vartotojas neatpažintas",rsp);
+			} else return new(1012,"Vartotojas nerastas",rsp);
 		}
-		catch (Exception ex) { return new(111,"Vartotojo informacijos klaida",ex.Message); }
+		catch (Exception ex) { return new(1011,"Vartotojo informacijos klaida",ex.Message); }
 	}
 }
 
@@ -163,15 +176,14 @@ public class AuthRequest {
 		Timeout=DateTime.UtcNow.AddSeconds(Config.GetLong("Auth", "Timeout", 300));
 	}
 	/// <summary>Bazinis konstruktorius</summary>
-	public AuthRequest(int code, string? msg="", string? data=null){ Code=code; Message=msg; ErrorData=data; Return=$"/klaida?id={code}&msg={msg}"; }
+	public AuthRequest(int code, string? msg="", string? data=null){ Code=code; Message=msg; ErrorData=data; }
 	
 	/// <summary>Reportuoti klaidą</summary>
 	/// <param name="ctx"></param>
 	/// <returns></returns>
 	public AuthRequest Report(HttpContext ctx){
-		new DBExec("INSERT INTO app.log_error (log_code,log_msg,log_data,log_ip) VALUES (@code,@msg,@data,@ip);",
-			("@code",Code),("@msg",Message),("@data",ErrorData),("@ip",ctx.GetIP())).Execute();
-		ctx.Response.Redirect(Return??"/klaida");
+		new DBExec("INSERT INTO app.log_error (log_code,log_msg,log_data,log_ip) VALUES (@code,@msg,@data,@ip);",("@code",Code),("@msg",Message),("@data",ErrorData),("@ip",ctx.GetIP())).Execute();
+		ctx.Response.Redirect(Return??$"/klaida?id={Code}{(Message is null?"":"&msg="+Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(Message)))}");
 		return this;
 	}
 }

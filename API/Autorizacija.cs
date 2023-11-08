@@ -16,8 +16,12 @@ public static class Auth {
 	/// <param name="ctx">Http Context</param>
 	/// <param name="ct">Cancellation Token</param>
 	public static async Task Login(HttpContext ctx,CancellationToken ct){
-		var req = await VIISP.Auth.GetAuth(ctx,ct);
-		if(req.Code>0) req.Report(ctx);
+		//if(ctx.Request.Query.TryGetValue("c", out var c) && !string.IsNullOrEmpty(c.FirstOrDefault())){
+		//	ctx.Response.Redirect(c.FirstOrDefault()??"/");
+		//} else {
+			var req = await VIISP.Auth.GetAuth(ctx,ct);
+			if(req.Code>0) req.Report(ctx);
+		//}
 	}
 	
 	/// <summary>Vartotojo prisijungimas</summary>
@@ -32,9 +36,12 @@ public static class Auth {
 			tkn = await VIISP.Auth.GetUserDetails(tkn, ct);
 			if(tkn.Code>0) tkn.Report(ctx);
 			else if(tkn?.User is not null) {
-				VIISP.Auth.SessionInit(tkn.User, ctx);
-				var ret = tkn.Return ?? "/";
-				ctx.Response.Redirect(string.IsNullOrEmpty(ret) ? "/" : ret);
+				tkn = await VIISP.Auth.SessionInit(tkn, ctx, ct);				
+				if(tkn.Code>0) tkn.Report(ctx);
+				else {
+					var ret = tkn.Return ?? "/";
+					ctx.Response.Redirect(string.IsNullOrEmpty(ret) ? "/" : ret);
+				}
 			}
 		}
 	}
