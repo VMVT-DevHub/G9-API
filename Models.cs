@@ -4,7 +4,7 @@ namespace G9.Models;
 /// <summary>Deklaruojamų metų sąrašas veikloms pagal ūkio subjektus</summary>
 public class Veiklos {
 	/// <summary>Ūkio subjektai priskirti prisijungusiam vartotojui.</summary>
-	public List<BU>? BU { get; set; }
+	public List<JA>? BU { get; set; }
 	/// <summary>Geriamo Vandens Tiekimo sistemų sąrašas</summary>
 	public List<GVTS>? GVTS { get; set; }
 	/// <summary>Deklaruojami metai</summary>
@@ -15,7 +15,7 @@ public class Veiklos {
 /// <summary>Geriamojo vandens tiekimo sistemos ir deleguoti asmenys</summary>
 public class Delegavimas {
 	/// <summary>Juridinio asmens ūkio subjektai</summary>
-	public List<BU>? BU { get; set; }
+	public List<JA>? BU { get; set; }
 	/// <summary>Geriamojo vandens tiekimo sistemos priklausančios ūkio subjektams</summary>
 	public List<GVTS>? GVTS { get; set; }
 	/// <summary>Asmenys galintys deklaruoti GVTS rodmenis</summary>
@@ -25,8 +25,11 @@ public class Delegavimas {
 
 /// <summary>Geriamojo vandens tiekimo sistemos deklaravimas už metus</summary>
 public class Deklaravimas{
-	public List<BU>? BU { get; set; }
+	/// <summary>Juridinis asmuo</summary>
+	public List<JA>? JA { get; set; }
+	/// <summary>Geriamo vandens tiekimo sistemos</summary>
 	public List<GVTS>? GVTS { get; set; }
+	/// <summary>Deklaruojami metai</summary>
 	public List<Year>? Year { get; set; }
 }
 
@@ -58,14 +61,10 @@ public class Rodiklis {
 	public string? Unit { get; set; }
 	/// <summary>Aprašymas</summary>
 	public string? Descr { get; set; }
-
-	public Rodiklis (){
-		Console.WriteLine("EXEJUTING");
-	}
 }
 
 /// <summary>Ūkio subjekto informacija</summary>
-public class BU {
+public class JA {
 	/// <summary>Unikalus ūkio subjekto numeris</summary>
 	public long ID { get; set; }
 	/// <summary>Ūkio subjekto pavadinimas</summary>
@@ -129,5 +128,6 @@ public class Vartotojas {
 
 /// <summary>Deklaravimo informacija</summary>
 public class Deklaruoti {
+	/// <summary>Patvirtinti delkaruojamus metus</summary>
 	public bool Tvirtinimas { get; set; }
 }

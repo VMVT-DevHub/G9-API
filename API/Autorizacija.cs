@@ -1,3 +1,6 @@
+using App.VIISP;
+using App.Users;
+
 namespace App.API;
 
 /// <summary>Vartotojo autorizacija</summary>
@@ -16,12 +19,7 @@ public static class Auth {
 	/// <param name="ctx">Http Context</param>
 	/// <param name="ct">Cancellation Token</param>
 	public static async Task Login(HttpContext ctx,CancellationToken ct){
-		//if(ctx.Request.Query.TryGetValue("c", out var c) && !string.IsNullOrEmpty(c.FirstOrDefault())){
-		//	ctx.Response.Redirect(c.FirstOrDefault()??"/");
-		//} else {
-			var req = await VIISP.Auth.GetAuth(ctx,ct);
-			if(req.Code>0) req.Report(ctx);
-		//}
+		if(await VIISP.Auth.GetAuth(ctx,ct) is AuthRequestError err) err.Report(ctx);
 	}
 	
 	/// <summary>Vartotojo prisijungimas</summary>
@@ -31,14 +29,11 @@ public static class Auth {
 	/// <param name="ct">Cancellation Token</param>
 	public static async Task Evartai(HttpContext ctx, Guid ticket, string customData, CancellationToken ct){
 		var tkn = await VIISP.Auth.GetToken(ticket,ctx,ct);
-		if(tkn.Code>0) tkn.Report(ctx);
-		else if(tkn?.Token is not null) {
+		if(tkn.Valid(ctx) && tkn?.Token is not null) {
 			tkn = await VIISP.Auth.GetUserDetails(tkn, ct);
-			if(tkn.Code>0) tkn.Report(ctx);
-			else if(tkn?.User is not null) {
-				tkn = await VIISP.Auth.SessionInit(tkn, ctx, ct);				
-				if(tkn.Code>0) tkn.Report(ctx);
-				else {
+			if(tkn.Valid(ctx) && tkn?.User is not null) {
+				tkn = VIISP.Auth.SessionInit(tkn, ctx);				
+				if(tkn.Valid(ctx)) {
 					var ret = tkn.Return ?? "/";
 					ctx.Response.Redirect(string.IsNullOrEmpty(ret) ? "/" : ret);
 				}

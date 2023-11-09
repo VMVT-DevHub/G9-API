@@ -1,6 +1,5 @@
-
-using App;
 using App.API;
+using App.Auth;
 
 var app = Startup.Build(args);
 
@@ -28,7 +27,7 @@ app.MapGet("/api/login/evartai",Auth.Evartai).Swagger(
 app.MapGet("/api/deleg",Delegavimas.Get).Swagger(
 	"Gauti visas prisijungusio juridinio asmens deleguotų asmenų sąrašą.",
     "Gaunamas objektas"
-).Produces<G9.Models.Delegavimas>(200).AddEndpointFilter(Require.Admin);
+).Produces<G9.Models.Delegavimas>(200).AddEndpointFilter(Require.Role);
 
 
 app.MapPost("/api/deleg/{gvts}",Delegavimas.Set).Swagger(	

@@ -1,4 +1,4 @@
-
+using App.Users;
 using System.Collections.Concurrent;
 using System.Net.Http.Headers;
 using System.Text.Json;
@@ -31,7 +31,7 @@ public class Auth {
 					foreach(var i in clean)  {
 						if(LockList.TryRemove(i, out var itm)){
 							if(itm.Count>=report) { 
-								new DBExec("INSERT INTO app.log_error (log_code,log_msg,log_data,log_ip) VALUES (1015,'Too many logins',@data,@ip);",
+								new DBExec("INSERT INTO app.log_error (log_code,log_msg,log_data,log_ip) VALUES (1016,'Too many logins',@data,@ip);",
 									("@data",JsonSerializer.Serialize(itm)),("@ip",ip)).Execute();
 							}
 						}
@@ -70,11 +70,11 @@ public class Auth {
 						Redirect.TryAdd(ath.Ticket??new(),ath);
 						ctx.Response.Redirect(tck.Url??"/");
 						return ath;
-					} else return new (1004,"Peradresavimo kodo klaida",rsp);
-				} else return new (1003,"Peradresavimo klaida",rsp);
-			} catch (Exception ex) { return new (1002,"Sujungimo klaida",ex.Message); }
+					} else return new  AuthRequestError(1004,"Peradresavimo kodo klaida",rsp);
+				} else return new  AuthRequestError(1003,"Peradresavimo klaida",rsp);
+			} catch (Exception ex) { return new  AuthRequestError(1002,"Sujungimo klaida",ex.Message); }
 		}
-		return new(0);
+		return new AuthRequestError(0);
 	}
 
 	/// <summary>Vartotojo autorizacijos tikrinimas</summary>
@@ -93,30 +93,30 @@ public class Auth {
 							var tkn = JsonSerializer.Deserialize<AuthToken>(rsp);						
 							if(!string.IsNullOrEmpty(tkn?.Token)){ 
 								tck.Token=tkn.Token; return tck; 
-							} else return new(1010,"Negalimas prisijungimas",rsp);
-						} else return new(1009,"Autorizacijos klaida",rsp);
-					} catch (Exception ex) { return new(1008,"Prisijungimo validacijos klaida",ex.Message); }
-				} else return new(1007,"Baigėsi prisijungimui skirtas laikas",tck.Timeout.ToString("u"));
-			} else return new(1006,"Neteisingas prisijungimo adresas",tck.Timeout.ToString("u"));
-		} else return new(1005,"Neatpažinta autorizacija",ticket.ToString());
+							} else return new AuthRequestError(1010,"Negalimas prisijungimas",rsp);
+						} else return new AuthRequestError(1009,"Autorizacijos klaida",rsp);
+					} catch (Exception ex) { return new AuthRequestError(1008,"Prisijungimo validacijos klaida",ex.Message); }
+				} else return new AuthRequestError(1007,"Baigėsi prisijungimui skirtas laikas",tck.Timeout.ToString("u"));
+			} else return new AuthRequestError(1006,"Neteisingas prisijungimo adresas",tck.Timeout.ToString("u"));
+		} else return new AuthRequestError(1005,"Neatpažinta autorizacija",ticket.ToString());
 	}
 
 	/// <summary>Sesijos sukūrimas</summary>
 	/// <param name="req"></param>
 	/// <param name="ctx"></param>
-	/// <param name="ct"></param>
 	/// <returns></returns>
-	public static async Task<AuthRequest> SessionInit(AuthRequest req, HttpContext ctx, CancellationToken ct){
+	public static AuthRequest SessionInit(AuthRequest req, HttpContext ctx){
 		var usr=req.User;
-
 		if(usr is not null && long.TryParse(usr.AK, out var ak)){
 			if(usr.Type == "USER"){
-				
+				var usl = User.Login(ak,usr.FName??"",usr.LName??"",usr.Email,usr.Phone,ctx);
+				if(usl is UserError err) return new AuthRequestError(err.Code,err.Message,JsonSerializer.Serialize(err.ErrorData));
+				Session.CreateSession(usl,ctx);
 			}
-			Session.CreateSession(new User(){ AK = ak, Email=usr.Email, FName=usr.FName, LName=usr.LName, Phone=usr.Phone, Type=usr.Type }, ctx);
+			else Session.CreateSession(new User(){ AK = ak, Email=usr.Email, FName=usr.FName, LName=usr.LName, Phone=usr.Phone, Type=usr.Type }, ctx);
 			return req;
 		}
-		return new(1014,"Vartotojo kodas neatpažintas",JsonSerializer.Serialize(usr));
+		return new AuthRequestError(1014,"Vartotojo kodas neatpažintas",JsonSerializer.Serialize(usr));
 	}
 
 	/// <summary>Vartotojo autorizacijos detalės</summary>
@@ -131,10 +131,10 @@ public class Auth {
 			if(response.IsSuccessStatusCode){
 				var usr = JsonSerializer.Deserialize<AuthUser>(rsp);
 				if(!string.IsNullOrEmpty(usr?.AK)){ req.User=usr; return req; }
-				else return new(1013,"Vartotojas neatpažintas",rsp);
-			} else return new(1012,"Vartotojas nerastas",rsp);
+				else return new AuthRequestError(1013,"Vartotojas neatpažintas",rsp);
+			} else return new AuthRequestError(1012,"Vartotojas nerastas",rsp);
 		}
-		catch (Exception ex) { return new(1011,"Vartotojo informacijos klaida",ex.Message); }
+		catch (Exception ex) { return new AuthRequestError(1011,"Vartotojo informacijos klaida",ex.Message); }
 	}
 }
 
@@ -162,12 +162,6 @@ public class AuthRequest {
 	public string? Token { get; set; }
 	/// <summary>Vartotojo duomenys</summary>
 	public AuthUser? User { get; set; }
-	/// <summary>Klaidos žinutės kodas</summary>
-	public int Code { get; set; }
-	/// <summary>Statuso žinutė</summary>
-	public string? Message { get; set; }
-	/// <summary>Klaidos informacija</summary>
-	public string? ErrorData { get; set; }
 	
 	/// <summary>Užklausos konstruktorius</summary>
 	/// <param name="ticket">Autorizacijos identifikavimo numeris</param>
@@ -175,8 +169,29 @@ public class AuthRequest {
 		Ticket=ticket;
 		Timeout=DateTime.UtcNow.AddSeconds(Config.GetLong("Auth", "Timeout", 300));
 	}
+	/// <summary>Užklausos bazinis konstruktorius</summary>
+	public AuthRequest(){}
+
+	/// <summary>Autorizacijos užklausos klaidų tikrinimas ir reportavimas</summary>
+	/// <param name="ctx"></param>
+	/// <param name="report"></param>
+	/// <returns></returns>
+	public bool Valid(HttpContext ctx, bool report=true){ if(this is AuthRequestError err) { if(report) err.Report(ctx); return false; } return true; }
+
+}
+
+/// <summary>Autorizacijos užklausos klaida</summary>
+public class AuthRequestError : AuthRequest {
+
+	/// <summary>Klaidos žinutės kodas</summary>
+	public int Code { get; set; }
+	/// <summary>Statuso žinutė</summary>
+	public string? Message { get; set; }
+	/// <summary>Klaidos informacija</summary>
+	public string? ErrorData { get; set; }
+
 	/// <summary>Bazinis konstruktorius</summary>
-	public AuthRequest(int code, string? msg="", string? data=null){ Code=code; Message=msg; ErrorData=data; }
+	public AuthRequestError(int code, string? msg="", string? data=null){ Code=code; Message=msg; ErrorData=data; }
 	
 	/// <summary>Reportuoti klaidą</summary>
 	/// <param name="ctx"></param>
@@ -187,7 +202,6 @@ public class AuthRequest {
 		return this;
 	}
 }
-
 
 /// <summary>BIIP Vartotojo detalės</summary>
 public class AuthUser {
