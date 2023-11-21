@@ -38,7 +38,11 @@ public static class Config{
 	/// <param name="key">Įrašo raktas</param>
 	/// <returns>Įrašo reikšmė</returns>
 	public static string? GetVal(string group, string key) => Data.Get(group)?.Get(key)?.Value;
-
+	/// <summary>Gauti konfiguracinio įrašo tekstinę reikšmę</summary>
+	/// <param name="group">Įrašo grupė</param>
+	/// <param name="key">Įrašo raktas</param>
+	/// <returns>Įrašo reikšmė</returns>
+	public static string? GetText(string group, string key) => Data.Get(group)?.Get(key)?.Text;
 	/// <summary>Gauti konfiguracinio įrašo skaitinę reikšmę</summary>
 	/// <param name="group">Įrašo grupė</param>
 	/// <param name="key">Įrašo raktas</param>

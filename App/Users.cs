@@ -1,6 +1,5 @@
 using System.Text;
 using System.Text.Json;
-using App.Roles;
 
 namespace App.Users;
 
@@ -22,7 +21,9 @@ public class User {
 	/// <summary>Prisijungusio vartotojo tipas</summary>
 	public string? Type { get; set; } = "USER";
 	/// <summary>Vartotojo rolės</summary>
-	public List<long> Roles { get; set; }
+	public List<long>? Roles { get; set; }
+	/// <summary>Vartotojo rolės</summary>
+	public List<long>? Admin { get; set; }
 
 	/// <summary>Vartotojo klaidų tikrinimas ir reportavimas</summary>
 	/// <param name="ctx"></param>
@@ -33,8 +34,19 @@ public class User {
 	/// <summary>Gauti vartotojo roles</summary>
 	/// <returns></returns>
 	public User GetRoles(){
-		using var db = new DBExec("SELECT usrl_role FROM app.app_user_roles WHERE usrl_user=@usr","@usr",ID);
-		using var rdr = db.GetReader(); Roles = new(); while(rdr.Read()) Roles.Add(rdr.GetInt64(0)); return this;
+		using var db = new DBExec("SELECT role_name FROM app.app_user_roles LEFT JOIN app.app_roles on (usrl_role=role_id) WHERE usrl_user=@usr and role_name is not null","@usr",ID);
+		using var rdr = db.GetReader(); Roles = new(); 
+		while(rdr.Read()) {
+			var rle = rdr.GetString(0).Split(".");
+			if(rle.Length>=2 && long.TryParse(rle[1],out var role)){
+				Roles.Add(role);
+				if(rle.Length==3 && rle[2]=="admin") (Admin??=new()).Add(role);
+			}
+		}
+		return this;
+		//Getting role as number
+		//using var db = new DBExec("SELECT usrl_role FROM app.app_user_roles WHERE usrl_user=@usr","@usr",ID);
+		//using var rdr = db.GetReader(); Roles = new(); while(rdr.Read()) Roles.Add(rdr.GetInt64(0)); return this;
 	}
 
 	/// <summary>Registruoti prisijungusį vartotoją</summary>
@@ -56,6 +68,7 @@ public class User {
 				var usd = new User(){ ID=rdr.GetGuid(0), AK=rdr.GetInt64(1), FName=rdr.GetString(2), LName=rdr.GetString(3), Email=rdr.GetStringN(4), Phone=rdr.GetStringN(5) };
 				if(usr.FName!=usd.FName || usr.LName!=usd.LName || usr.Email!=usd.Email || usr.Phone!=usd.Phone)
 					if(Update(usr) is UserError upd) return upd;
+				usr.ID=usd.ID;
 				return usr.GetRoles();
 			}
 			return new UserError(1102, "Vartotojo informacijos klaida", usr);

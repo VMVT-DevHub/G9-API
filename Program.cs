@@ -24,41 +24,43 @@ app.MapGet("/api/login/evartai",Auth.Evartai).Swagger(
 
 
 
-app.MapGet("/api/deleg",Delegavimas.Get).Swagger(
-	"Gauti visas prisijungusio juridinio asmens deleguotų asmenų sąrašą.",
-    "Gaunamas objektas"
-).Produces<G9.Models.Delegavimas>(200).AddEndpointFilter(Require.Role);
+// app.MapGet("/api/deleg",Delegavimas.Get).Swagger(
+// 	"Gauti visas prisijungusio juridinio asmens deleguotų asmenų sąrašą.",
+//     "Gaunamas objektas"
+// ).Produces<G9.Models.Delegavimas>(200).AddEndpointFilter(Require.Role);
 
 
-app.MapPost("/api/deleg/{gvts}",Delegavimas.Set).Swagger(	
-	"Pridėti deleguojamą asmenį",
-	"Gaunamas objektas"
-).Produces(204);
+// app.MapPost("/api/deleg/{gvts}",Delegavimas.Set).Swagger(	
+// 	"Pridėti deleguojamą asmenį",
+// 	"Gaunamas objektas"
+// ).Produces(204);
 
-app.MapDelete("/api/deleg/{gvts}",Delegavimas.Del).Swagger(	
-	"Trinti deleguojamą asmenį",
-	"Gaunamas objektas"
-).Produces(204);
+// app.MapDelete("/api/deleg/{gvts}",Delegavimas.Del).Swagger(	
+// 	"Trinti deleguojamą asmenį",
+// 	"Gaunamas objektas"
+// ).Produces(204);
 
 
 app.MapGet("/api/declar/{gvts}/{metai}",Deklaravimas.Get).Swagger(	
 	"Gauti deklaruojamų rodiklių sąrašą.",
 	"Gaunamas objektas"
-).Produces<G9.Models.Deklaravimas>(200);
+).Produces<G9.Models.Deklaravimas>(200).Produces<E401>(401).Produces<E403>(403).AddEndpointFilter(Require.Role);
 
-app.MapPost("/api/declar/{gvts}/{metai}",Deklaravimas.Set).Swagger(	
-	"Deklaruoti metus",
-	"Tuščias atsakymas"
-).Produces(204);
+// app.MapPost("/api/declar/{gvts}/{metai}",Deklaravimas.Set).Swagger(	
+// 	"Deklaruoti metus",
+// 	"Tuščias atsakymas"
+// ).Produces(204);
 
 
 
 app.MapGet("/api/veiklos",Veiklos.Get).Swagger(	
 	"Gauti visas prisijungusio vartotojo G9 veiklas.",
 	"Gaunamas objektas"
-).Produces<G9.Models.Veiklos>(200);
+).Produces<G9.Models.Veiklos>(200).Produces<E401>(401).Produces<E403>(403).AddEndpointFilter(Require.Role);
 
 
+
+/*
 app.MapGet("/api/rodikliai",Rodikliai.List).Swagger(	
 	"Gauti visus G9 rodiklius.",
 	"Gaunamas objektas"
@@ -80,5 +82,5 @@ app.MapDelete("/api/rodiklis/{gvts}/{metai}",Rodikliai.Del).Swagger(
 	""
 ).Produces(204);
 
-
+*/
 app.Run();

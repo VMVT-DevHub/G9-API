@@ -71,6 +71,11 @@ public class DBExec : IDisposable {
 	/// <returns>Įrašų skaičius</returns>
 	public object? ExecuteScalar() { var ret = Command(SQL).ExecuteScalar(); Dispose(); return ret;}
 
+	/// <summary>Vykdyti SQL užklausą grąžinant reikšmę</summary>
+	/// <returns>Įrašų skaičius</returns>
+	public T? ExecuteScalar<T>() { var ret = Command(SQL).ExecuteScalar(); Dispose(); return ret is T t ? t: default;}
+
+
 	/// <summary>Vykdyti SQL užklausą</summary>
 	/// <returns>Įrašų skaičius</returns>
 	public async Task<object?> ExecuteScalar(CancellationToken ct) { var ret = await(await CommandAsync(SQL,ct)).ExecuteScalarAsync(ct); Dispose(); return ret; }
@@ -110,6 +115,65 @@ public static class DBExtensions {
 	public static double? GetDoubleN(this NpgsqlDataReader rdr,int id) => rdr.IsDBNull(id)?null:rdr.GetDouble(id);
 	/// <summary></summary><param name="rdr"></param><param name="id"></param><returns></returns>
 	public static T? GetObject<T>(this NpgsqlDataReader rdr,int id) => rdr.IsDBNull(id)?default:JsonSerializer.Deserialize<T>(rdr.GetString(id));
+
+
+
+	/// <summary>Atiduoti užklausą kaip masyvą į API</summary>
+	/// <param name="query">DB užklausa</param>
+	/// <param name="dbparams">Užklausos parametrai</param>
+	/// <param name="wrt">Json writer</param>
+	/// <param name="ct"></param>
+	/// <param name="flush">atiduodamas įrašų kiekis</param>
+	/// <returns></returns>
+	public static async Task PrintArray(string query, DBParams? dbparams,Utf8JsonWriter wrt, CancellationToken ct,int flush=20){
+		using var rdr = await new DBExec(query, dbparams??new()).GetReaderAsync(ct);
+		wrt.WriteStartArray();
+		await Loop(rdr,wrt,ct,flush);
+		wrt.WriteEndArray();
+	}
+
+
+	/// <summary>Atiduoti masyvo duomenis į API</summary>
+	/// <param name="rdr"></param>
+	/// <param name="wrt"></param>
+	/// <param name="ct"></param>
+	/// <param name="flush">atiduodamas įrašų kiekis</param>
+	/// <returns></returns>
+	public static async Task Loop(NpgsqlDataReader rdr, Utf8JsonWriter wrt, CancellationToken ct, int flush=20){
+		var act= new List<Action<int>>();
+		var fct = rdr.FieldCount;
+		for(var i =0; i<fct; i++) act.Add(GetAct(rdr,wrt,i));
+		var cnt=flush;
+		while (await rdr.ReadAsync(ct)) {
+			wrt.WriteStartObject();
+			for(var i=0; i<fct ;i++) act[i](i);
+			wrt.WriteEndObject();
+			if(cnt--<1){ wrt.Flush(); cnt=flush; }
+		}
+	}
+	
+	/// <summary>Duomenų konvertavimo funkcija</summary>
+	/// <param name="rdr">Data reader</param>
+	/// <param name="wrt">JSON writer</param>
+	/// <param name="i">Duomenų lauko ID</param>
+	/// <returns>Funkcija</returns>
+	private static Action<int> GetAct(NpgsqlDataReader rdr, Utf8JsonWriter wrt, int i) {
+		var tp= rdr.GetFieldType(i); var nm= rdr.GetName(i);
+		if(tp==typeof(bool)) return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNull(nm); else wrt.WriteBoolean(nm,rdr.GetBoolean(i));};
+		else if(tp==typeof(byte)) return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNull(nm); else wrt.WriteNumber(nm,rdr.GetByte(i));};
+		else if(tp==typeof(char)) return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNull(nm); else wrt.WriteNumber(nm,rdr.GetChar(i));};
+		else if(tp==typeof(DateTime)) return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNull(nm); else wrt.WriteString(nm,rdr.GetDateTime(i));};
+		else if(tp==typeof(decimal)) return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNull(nm); else wrt.WriteNumber(nm,rdr.GetDecimal(i));};
+		else if(tp==typeof(double)) return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNull(nm); else wrt.WriteNumber(nm,rdr.GetDouble(i));};
+		else if(tp==typeof(float)) return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNull(nm); else wrt.WriteNumber(nm,rdr.GetFloat(i));};
+		else if(tp==typeof(Guid)) return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNull(nm); else wrt.WriteString(nm,rdr.GetGuid(i));};
+		else if(tp==typeof(short)) return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNull(nm); else wrt.WriteNumber(nm,rdr.GetInt16(i));};
+		else if(tp==typeof(int)) return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNull(nm); else wrt.WriteNumber(nm,rdr.GetInt32(i));};
+		else if(tp==typeof(long)) return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNull(nm); else wrt.WriteNumber(nm,rdr.GetInt64(i));};
+		else if(tp==typeof(string)) return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNull(nm); else wrt.WriteString(nm,rdr.GetString(i));};
+		else if(tp==typeof(TimeSpan)) return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNull(nm); else wrt.WriteNumber(nm,rdr.GetTimeSpan(i).Ticks);};
+		else return (i)=>{};
+	} 
 }
 
 /// <summary>Duomenų bazės užklausos parametrai</summary>

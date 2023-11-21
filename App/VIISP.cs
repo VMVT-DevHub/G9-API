@@ -49,7 +49,7 @@ public class Auth {
 			Timeout = new TimeSpan(0,0,Config.GetInt("Auth", "Timeout", 15)), 
 			BaseAddress = new Uri($"https://{Config.GetVal("Auth", "Host")}/")
 		};
-		HClient.DefaultRequestHeaders.Add("X-Api-Key", Config.GetVal("Auth", "Token"));
+		HClient.DefaultRequestHeaders.Add("X-Api-Key", Config.GetText("Auth", "Token"));
 	}
 
 
@@ -130,6 +130,7 @@ public class Auth {
 			var rsp = await response.Content.ReadAsStringAsync(ct);
 			if(response.IsSuccessStatusCode){
 				var usr = JsonSerializer.Deserialize<AuthUser>(rsp);
+				new DBExec("insert into app.log_login (data) VALUES (@dt);","@dt",rsp).Execute();
 				if(!string.IsNullOrEmpty(usr?.AK)){ req.User=usr; return req; }
 				else return new AuthRequestError(1013,"Vartotojas neatpažintas",rsp);
 			} else return new AuthRequestError(1012,"Vartotojas nerastas",rsp);

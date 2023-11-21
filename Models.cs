@@ -4,34 +4,64 @@ namespace G9.Models;
 /// <summary>Deklaruojamų metų sąrašas veikloms pagal ūkio subjektus</summary>
 public class Veiklos {
 	/// <summary>Ūkio subjektai priskirti prisijungusiam vartotojui.</summary>
-	public List<JA>? BU { get; set; }
+	public List<JA>? JA { get; set; }
 	/// <summary>Geriamo Vandens Tiekimo sistemų sąrašas</summary>
 	public List<GVTS>? GVTS { get; set; }
 	/// <summary>Deklaruojami metai</summary>
-	public List<Year>? Year { get; set; }
+	public List<Deklaravimas>? Deklaracijos { get; set; }
 }
 
 
-/// <summary>Geriamojo vandens tiekimo sistemos ir deleguoti asmenys</summary>
-public class Delegavimas {
-	/// <summary>Juridinio asmens ūkio subjektai</summary>
-	public List<JA>? BU { get; set; }
-	/// <summary>Geriamojo vandens tiekimo sistemos priklausančios ūkio subjektams</summary>
-	public List<GVTS>? GVTS { get; set; }
-	/// <summary>Asmenys galintys deklaruoti GVTS rodmenis</summary>
-	public List<Asmuo>? Users { get; set; }
+/// <summary>Ūkio subjekto informacija</summary>
+public class JA {
+	/// <summary>Unikalus ūkio subjekto numeris</summary>
+	public long ID { get; set; }
+	/// <summary>Ūkio subjekto pavadinimas</summary>
+	public string? Title { get; set; }
+	/// <summary>Registruoto ūkio subjekto adresas</summary>
+	public string? Addr { get; set; }
+}
+
+/// <summary>Geriamojo vandens tiekimo sistemos informacija</summary>
+public class GVTS {
+	/// <summary>Unikalus numeris</summary>
+	public long ID { get; set; }
+	/// <summary>Ūkio subjekto numeris</summary>
+	public long JA { get; set; }
+	/// <summary>Pavadinimas</summary>
+	public string? Title { get; set; }
+	/// <summary>Adresas</summary>
+	public string? Addr { get; set; }
+}
+
+/// <summary>Deklaruojamų metų informacija</summary>
+public class Deklaravimas	{
+	/// <summary>Gerimojo vandens tiekimo sistema</summary>
+	public long GVTS { get; set; }
+	/// <summary></summary>
+	public int Metai { get; set; }
+	/// <summary></summary>
+	public string? Statusas { get; set; }
+	/// <summary></summary>
+	public double? Kiekis { get; set; }
+	/// <summary></summary>
+	public int? Vartotojai { get; set; }
+	/// <summary>Deklaravimo data</summary>
+	public DateTime? DeklarDate { get; set; }
+	/// <summary>Deklaravęs vartotojas</summary>
+	public string? DeklarUser { get; set; }
+	/// <summary>Paskutinė redagavimo data</summary>
+	public DateTime? RedagDate { get; set; }
+	/// <summary>Paskurinis redagavęs vartotojas</summary>
+	public string? RedagUser { get; set; }
 }
 
 
-/// <summary>Geriamojo vandens tiekimo sistemos deklaravimas už metus</summary>
-public class Deklaravimas{
-	/// <summary>Juridinis asmuo</summary>
-	public List<JA>? JA { get; set; }
-	/// <summary>Geriamo vandens tiekimo sistemos</summary>
-	public List<GVTS>? GVTS { get; set; }
-	/// <summary>Deklaruojami metai</summary>
-	public List<Year>? Year { get; set; }
-}
+
+
+
+
+
 
 
 /// <summary>Pilnas rodiklių sąrašas deklaruojamiems metams</summary>
@@ -63,40 +93,40 @@ public class Rodiklis {
 	public string? Descr { get; set; }
 }
 
-/// <summary>Ūkio subjekto informacija</summary>
-public class JA {
-	/// <summary>Unikalus ūkio subjekto numeris</summary>
-	public long ID { get; set; }
-	/// <summary>Ūkio subjekto pavadinimas</summary>
-	public string? Title { get; set; }
-	/// <summary>Registruoto ūkio subjekto adresas</summary>
-	public string? Address { get; set; }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/// <summary>Geriamojo vandens tiekimo sistemos ir deleguoti asmenys</summary>
+public class Delegavimas {
+	/// <summary>Juridinio asmens ūkio subjektai</summary>
+	public List<JA>? JA { get; set; }
+	/// <summary>Geriamojo vandens tiekimo sistemos priklausančios ūkio subjektams</summary>
+	public List<GVTS>? GVTS { get; set; }
+	/// <summary>Asmenys galintys deklaruoti GVTS rodmenis</summary>
+	public List<Asmuo>? Users { get; set; }
 }
 
-/// <summary>Geriamojo vandens tiekimo sistemos informacija</summary>
-public class GVTS {
-	/// <summary>Unikalus numeris</summary>
-	public long ID { get; set; }
-	/// <summary>Ūkio subjekto numeris</summary>
-	public long BU { get; set; }
-	/// <summary>Pavadinimas</summary>
-	public string? Title { get; set; }
-	/// <summary>Adresas</summary>
-	public string? Address { get; set; }
 
-}
 
-/// <summary>Deklaruojamų metų informacija</summary>
-public class Year	{
-	/// <summary>Unikalus numeris</summary>
-	public int ID { get; set; }
-	/// <summary>Gerimojo vandens tiekimo sistema</summary>
-	public long GVTS { get; set; }
-	/// <summary>Paskutinio keitimo data</summary>
-	public DateTime? Modified { get; set; }
-	/// <summary>Deklaravimo data</summary>
-	public DateTime? Submitted { get; set; }
-}
+
+
+
+
 
 /// <summary>Asmens aprašas</summary>
 public class Asmuo {
