@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace App.Users;
 
@@ -9,7 +10,7 @@ public class User {
 	/// <summary>Sisteminis vartotojo id</summary>
 	public Guid? ID { get; set; }
 	/// <summary>Asmens Kodas</summary>
-	public long? AK { get; set; }
+	[JsonIgnore] public long? AK { get; set; }
 	/// <summary>Vardas</summary>
 	public string? FName { get; set; }
 	/// <summary>Pavardė</summary>
@@ -19,8 +20,6 @@ public class User {
 	/// <summary>Telefono numeris</summary>
 	public string? Phone { get; set; }
 	/// <summary>Prisijungusio vartotojo tipas</summary>
-	public string? Type { get; set; } = "USER";
-	/// <summary>Vartotojo rolės</summary>
 	public List<long>? Roles { get; set; }
 	/// <summary>Vartotojo rolės</summary>
 	public List<long>? Admin { get; set; }
@@ -35,12 +34,11 @@ public class User {
 	/// <returns></returns>
 	public User GetRoles(){
 		using var db = new DBExec("SELECT role_name FROM app.user_roles LEFT JOIN app.roles on (usrl_role=role_id) WHERE usrl_user=@usr and role_name is not null","@usr",ID);
-		using var rdr = db.GetReader(); Roles = new(); 
+		using var rdr = db.GetReader(); Roles = new(); Admin = new();
 		while(rdr.Read()) {
 			var rle = rdr.GetString(0).Split(".");
 			if(rle.Length>=2 && long.TryParse(rle[1],out var role)){
-				Roles.Add(role);
-				if(rle.Length==3 && rle[2]=="admin") (Admin??=new()).Add(role);
+				Roles.Add(role); if(rle.Length==3 && rle[2]=="admin") Admin.Add(role);
 			}
 		}
 		return this;
@@ -55,25 +53,30 @@ public class User {
 	/// <param name="lname">Pavardė</param>
 	/// <param name="email">El.Paštas</param>
 	/// <param name="phone">Telefonas</param>
+	/// <param name="ja">Juridinio asmens kodas</param>
 	/// <param name="ctx"></param>
 	/// <returns>Prisijungęs vartotojas</returns>
-	public static User Login(long ak, string fname, string lname, string? email, string? phone, HttpContext ctx)
-		=> Login(new User(){ AK=ak, FName=fname, LName=lname, Email=email, Phone=phone },ctx);
+	public static User Login(long ak, string fname, string lname, string? email, string? phone, string? ja, HttpContext ctx)
+		=> Login(new User(){ AK=ak, FName=fname, LName=lname, Email=email, Phone=phone, Roles=long.TryParse(ja, out var num)?new(){num}:null },ctx);
 
 	private static User Login(User usr, HttpContext ctx, bool create=true){
-		using var db = new DBExec("SELECT id,ak,fname,lname,email,phone FROM app.user_login(@ak,@ip,@ua)",("@ak",usr.AK),("@ip",ctx.GetIP()),("@ua",ctx.GetUA()));
+		using var db = new DBExec("SELECT id,fname,lname,email,phone FROM app.user_login(@ak,@ip,@ua)",("@ak",(object?)usr.ID ?? usr.AK),("@ip",ctx.GetIP()),("@ua",ctx.GetUA()));
 		using var rdr = db.GetReader();
 		if(rdr.Read()){
 			if(!(rdr.IsDBNull(0) || rdr.IsDBNull(1) || rdr.IsDBNull(2) || rdr.IsDBNull(3))) {
-				var usd = new User(){ ID=rdr.GetGuid(0), AK=rdr.GetInt64(1), FName=rdr.GetString(2), LName=rdr.GetString(3), Email=rdr.GetStringN(4), Phone=rdr.GetStringN(5) };
-				if(usr.FName!=usd.FName || usr.LName!=usd.LName || usr.Email!=usd.Email || usr.Phone!=usd.Phone)
-					if(Update(usr) is UserError upd) return upd;
-				usr.ID=usd.ID;
+				var usd = new User(){ ID=rdr.GetGuid(0), FName=rdr.GetString(1), LName=rdr.GetString(2), Email=rdr.GetStringN(3), Phone=rdr.GetStringN(4) };
+				usr.ID=usd.ID; usr.AK=null;
+				var ja = usr.Roles?.Count>0; 
+				if(usr.FName!=usd.FName || usr.LName!=usd.LName || 
+					//JA - neatnaujinam
+					(!ja && (usr.Email!=usd.Email || usr.Phone!=usd.Phone)))
+						if(Update(usr) is UserError upd) return upd;
+				if(ja) { usr.Email=usd.Email; usr.Phone=usd.Phone; usr.Admin=usr.Roles; return usr; }
 				return usr.GetRoles();
 			}
 			return new UserError(1102, "Vartotojo informacijos klaida", usr);
 		}
-		return create ? Login(Create(usr),ctx,true) : new UserError(1101,"Vartotojas nerastas",usr);
+		return create ? Login(Create(usr),ctx,false) : new UserError(1101,"Vartotojas nerastas",usr);
 	}
 	private static User Create(User usr){
 		using var db = new DBExec("SELECT id,msg FROM app.user_add(@ak,@fname,@lname,@email,@phone);", ("@ak",usr.AK),("@fname",usr.FName),("@lname",usr.LName),("@email",usr.Email),("@phone",usr.Phone));

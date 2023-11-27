@@ -1,4 +1,5 @@
 using App.Users;
+using Microsoft.AspNetCore.Mvc.RazorPages.Infrastructure;
 using System.Collections.Concurrent;
 using System.Net.Http.Headers;
 using System.Text.Json;
@@ -31,7 +32,7 @@ public class Auth {
 					foreach(var i in clean)  {
 						if(LockList.TryRemove(i, out var itm)){
 							if(itm.Count>=report) { 
-								new DBExec("INSERT INTO app.log_error (log_code,log_msg,log_data,log_ip) VALUES (1016,'Too many logins',@data,@ip);",
+								new DBExec("INSERT INTO app.log_error (log_code,log_msg,log_data,log_ip) VALUES (1019,'Too many logins',@data,@ip);",
 									("@data",JsonSerializer.Serialize(itm)),("@ip",ip)).Execute();
 							}
 						}
@@ -108,12 +109,10 @@ public class Auth {
 	public static AuthRequest SessionInit(AuthRequest req, HttpContext ctx){
 		var usr=req.User;
 		if(usr is not null && long.TryParse(usr.AK, out var ak)){
-			if(usr.Type == "USER"){
-				var usl = User.Login(ak,usr.FName??"",usr.LName??"",usr.Email,usr.Phone,ctx);
-				if(usl is UserError err) return new AuthRequestError(err.Code,err.Message,JsonSerializer.Serialize(err.ErrorData));
-				Session.CreateSession(usl,ctx);
-			}
-			else Session.CreateSession(new User(){ AK = ak, Email=usr.Email, FName=usr.FName, LName=usr.LName, Phone=usr.Phone, Type=usr.Type }, ctx);
+			var usl = User.Login(ak,usr.FName??"",usr.LName??"",usr.Email,usr.Phone,usr.JA,ctx);
+			if(usl is UserError err) return new AuthRequestError(err.Code,err.Message,JsonSerializer.Serialize(err.ErrorData));
+			Session.CreateSession(usl,ctx);
+			usr.AK=null;
 			return req;
 		}
 		return new AuthRequestError(1014,"Vartotojo kodas neatpažintas",JsonSerializer.Serialize(usr));
@@ -131,11 +130,35 @@ public class Auth {
 			if(response.IsSuccessStatusCode){
 				var usr = JsonSerializer.Deserialize<AuthUser>(rsp);
 				new DBExec("insert into app.log_login (log_data) VALUES (@dt);","@dt",rsp).Execute();
-				if(!string.IsNullOrEmpty(usr?.AK)){ req.User=usr; return req; }
+				if(!string.IsNullOrEmpty(usr?.AK)){ 
+					req.User=usr; 
+					return await GetUserGroups(req,ct);
+				}
 				else return new AuthRequestError(1013,"Vartotojas neatpažintas",rsp);
 			} else return new AuthRequestError(1012,"Vartotojas nerastas",rsp);
 		}
 		catch (Exception ex) { return new AuthRequestError(1011,"Vartotojo informacijos klaida",ex.Message); }
+	}
+
+		/// <summary>Vartotojo autorizacijos detalės</summary>
+	/// <param name="req">Autorizacijos užklausa</param>
+	/// <param name="ct"></param>
+	public static async Task<AuthRequest> GetUserGroups(AuthRequest req, CancellationToken ct){
+		if(req.User is null) return req;
+		var usr = req.User;
+		using var msg = new HttpRequestMessage(HttpMethod.Get, Config.GetVal("Auth","GetUser",$"/api/users/{usr.ID}?populate=groups"));
+		msg.Headers.Authorization = new("Bearer",req.Token);
+		try {
+			using var response = await HClient.SendAsync(msg,ct);
+			var rsp = await response.Content.ReadAsStringAsync(ct);
+			if(response.IsSuccessStatusCode){
+				var inf = JsonSerializer.Deserialize<AuthUserInfo>(rsp);
+				new DBExec("insert into app.log_login (log_data) VALUES (@dt);","@dt",rsp).Execute();
+				if (inf?.Groups is not null) foreach(var i in inf.Groups) if(i.Email==usr.Email && i.Phone==usr.Phone) usr.JA=i.JA; 
+				return req; 
+			} else return new AuthRequestError(1016,"Vartotojas nerastas",rsp);
+		}
+		catch (Exception ex) { return new AuthRequestError(1015,"Vartotojo informacijos klaida",ex.Message); }
 	}
 }
 
@@ -208,6 +231,8 @@ public class AuthRequestError : AuthRequest {
 public class AuthUser {
 	/// <summary>BIIP ID</summary>
 	[JsonPropertyName("id")] public int ID { get; set; }
+	/// <summary>Juridinio asmens kodas</summary>
+	[JsonPropertyName("companyCode")] public string? JA { get; set;}
 	/// <summary>AK</summary>
 	[JsonPropertyName("personalCode")] public string? AK { get; set; }
 	/// <summary>Vardas</summary>
@@ -223,6 +248,40 @@ public class AuthUser {
 	/// <summary>Pilnas vardas</summary>
 	[JsonPropertyName("fullName")] public string? Name { get; set; }
 }
+
+/// <summary>JA Grupės</summary>
+public class AuthGroups {
+	/// <summary></summary>
+	[JsonPropertyName("id")] public int ID { get; set; }
+	/// <summary>BIIP identifikatorius</summary>
+	[JsonPropertyName("companyCode")] public string? JA { get; set; }
+	/// <summary>JA Kodas</summary>
+	[JsonPropertyName("name")] public string? Name { get; set; }
+	/// <summary>JA Pavadinimas</summary>
+	[JsonPropertyName("companyEmail")] public string? Email { get; set; }
+	/// <summary>Tel. Nr.</summary>
+	[JsonPropertyName("companyPhone")] public string? Phone { get; set; }
+}
+
+/// <summary>Vartotojo informacija</summary>
+public class AuthUserInfo {
+	
+	/// <summary>BIIP ID</summary>
+	[JsonPropertyName("id")] public int ID { get; set; }
+	/// <summary>Vardas</summary>
+	[JsonPropertyName("firstName")] public string? FName { get; set; }
+	/// <summary>Pavardė</summary>
+	[JsonPropertyName("lastName")] public string? LName { get; set; }
+	/// <summary>El. Paštas</summary>
+	[JsonPropertyName("email")] public string? Email { get; set; }
+	/// <summary>Tel. Nr.</summary>
+	[JsonPropertyName("phone")] public string? Phone { get; set; }
+	/// <summary>Pilnas vardas</summary>
+	[JsonPropertyName("fullName")] public string? Name { get; set; }
+	/// <summary>Deleguoti JA</summary>
+	[JsonPropertyName("groups")] public List<AuthGroups>? Groups { get; set; }
+}
+
 
 /// <summary>BIIP Autorizacija</summary>
 public class AuthTicket{
