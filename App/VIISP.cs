@@ -123,14 +123,14 @@ public class Auth {
 	/// <param name="req">Autorizacijos užklausa</param>
 	/// <param name="ct"></param>
 	public static async Task<AuthRequest> GetUserDetails(AuthRequest req, CancellationToken ct){
-		using var msg = new HttpRequestMessage(HttpMethod.Post, Config.GetVal("Auth","GetUser","/api/users/me"));
+		using var msg = new HttpRequestMessage(HttpMethod.Get, Config.GetVal("Auth","GetUser","/api/users/me?populate=groups"));
 		msg.Headers.Authorization = new("Bearer",req.Token);
 		try {
 			using var response = await HClient.SendAsync(msg,ct);
 			var rsp = await response.Content.ReadAsStringAsync(ct);
 			if(response.IsSuccessStatusCode){
 				var usr = JsonSerializer.Deserialize<AuthUser>(rsp);
-				new DBExec("insert into app.log_login (data) VALUES (@dt);","@dt",rsp).Execute();
+				new DBExec("insert into app.log_login (log_data) VALUES (@dt);","@dt",rsp).Execute();
 				if(!string.IsNullOrEmpty(usr?.AK)){ req.User=usr; return req; }
 				else return new AuthRequestError(1013,"Vartotojas neatpažintas",rsp);
 			} else return new AuthRequestError(1012,"Vartotojas nerastas",rsp);

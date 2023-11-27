@@ -34,17 +34,18 @@ public class GVTS {
 	public string? Addr { get; set; }
 }
 
+
 /// <summary>Deklaruojamų metų informacija</summary>
 public class Deklaravimas	{
 	/// <summary>Gerimojo vandens tiekimo sistema</summary>
 	public long GVTS { get; set; }
-	/// <summary></summary>
+	/// <summary>Deklaruojami metai</summary>
 	public int Metai { get; set; }
-	/// <summary></summary>
+	/// <summary>Deklaravimo statusas</summary>
 	public string? Statusas { get; set; }
-	/// <summary></summary>
+	/// <summary>Deklaruojamo vandens kiekis m3/para</summary>
 	public double? Kiekis { get; set; }
-	/// <summary></summary>
+	/// <summary>Aptarnaujamų vartotojų skaičius</summary>
 	public int? Vartotojai { get; set; }
 	/// <summary>Deklaravimo data</summary>
 	public DateTime? DeklarDate { get; set; }
@@ -56,7 +57,13 @@ public class Deklaravimas	{
 	public string? RedagUser { get; set; }
 }
 
-
+/// <summary>Deklaravimo informacija</summary>
+public class DeklaravimasSet {
+	/// <summary>Deklaruojamo vandens kiekis m3/para</summary>
+	public double? Kiekis { get; set; }
+	/// <summary>Aptarnaujamų vartotojų skaičius</summary>
+	public int? Vartotojai { get; set; }
+}
 
 
 
@@ -156,8 +163,4 @@ public class Vartotojas {
 	public string? Email { get; set; }
 }
 
-/// <summary>Deklaravimo informacija</summary>
-public class Deklaruoti {
-	/// <summary>Patvirtinti delkaruojamus metus</summary>
-	public bool Tvirtinimas { get; set; }
-}
+

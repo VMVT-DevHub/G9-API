@@ -34,7 +34,7 @@ public class User {
 	/// <summary>Gauti vartotojo roles</summary>
 	/// <returns></returns>
 	public User GetRoles(){
-		using var db = new DBExec("SELECT role_name FROM app.app_user_roles LEFT JOIN app.app_roles on (usrl_role=role_id) WHERE usrl_user=@usr and role_name is not null","@usr",ID);
+		using var db = new DBExec("SELECT role_name FROM app.user_roles LEFT JOIN app.roles on (usrl_role=role_id) WHERE usrl_user=@usr and role_name is not null","@usr",ID);
 		using var rdr = db.GetReader(); Roles = new(); 
 		while(rdr.Read()) {
 			var rle = rdr.GetString(0).Split(".");

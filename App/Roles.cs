@@ -55,7 +55,7 @@ public class Role {
 	/// <param name="id">Rolės identifikatorius</param>
 	/// <returns>Rolė</returns>
 	public static Role? Get(long id){
-		using var db = new DBExec("SELECT role_id,role_name,role_title,role_desc FROM app.app_roles WHERE role_id=@id;","@id",id);
+		using var db = new DBExec("SELECT role_id,role_name,role_title,role_desc FROM app.roles WHERE role_id=@id;","@id",id);
 		using var rdr = db.GetReader();
 		return rdr.Read() ? new Role(){ ID=rdr.GetInt64(0), Name=rdr.GetString(1), Title=rdr.GetStringN(3), Descr=rdr.GetStringN(4) } : null;
 	}
@@ -85,7 +85,7 @@ public class Roles : List<Role> {
 	private Dictionary<long, Role> CachedIndex { get; } = new();
 	/// <summary>Sąrašo konstruktorius</summary>
 	public Roles() {
-		using var db = new DBExec("SELECT role_id,role_name,role_title,role_desc FROM app.app_roles;");
+		using var db = new DBExec("SELECT role_id,role_name,role_title,role_desc FROM app.roles;");
 		using var rdr = db.GetReader();
 		while(rdr.Read()){
 			var rle = new Role(){ ID=rdr.GetInt64(0), Name=rdr.GetString(1), Title=rdr.GetStringN(2), Descr=rdr.GetStringN(3)};

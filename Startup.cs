@@ -1,12 +1,20 @@
 
+using System.Data.Common;
+using App.Auth;
+
 /// <summary>Application initial startup class</summary>
 public static class Startup {
+	/// <summary></summary>
+	public static string ConnStr { get; set; } = "";
+
 	/// <summary>Build minimal API app</summary>
 	/// <param name="args">primary execution arguments</param>
 	/// <returns>WebApplication</returns>
 	public static WebApplication Build(string[] args){
 		var builder = WebApplication.CreateBuilder(args);
 		builder.WebHost.UseKestrel(option => option.AddServerHeader = false);
+
+		ConnStr = builder.Configuration.GetConnectionString("DefaultConnection") ?? "";
 
 		#if DEBUG //Disable Swagger
 			builder.Services.AddEndpointsApiExplorer();
@@ -39,4 +47,29 @@ public static class Startup {
 		#endif
 		return rtx;
 	}
+
+
+	/// <summary>Registruoti API atsakymo klaidas</summary>
+	/// <param name="builder"></param><param name="err"></param><returns></returns>
+	public static RouteHandlerBuilder Errors(this RouteHandlerBuilder builder,params int[] err){
+		foreach (var i in err) {
+			switch (i) {
+				case 401: builder.Produces<E401>(401); break;
+				case 403: builder.Produces<E403>(403); break;
+				case 404: builder.Produces<E404>(404); break;
+				case 422: builder.Produces<E422>(422); break;
+			}
+		}
+		return builder;
+	}
+
+	/// <summary>Registruoti API atsakymo formatą</summary>
+	/// <typeparam name="T">Formatas</typeparam><param name="builder"></param><returns></returns>
+	public static RouteHandlerBuilder Response<T>(this RouteHandlerBuilder builder) => builder.Produces<T>(200);
+
+	/// <summary>Registruoti API atsakymo formatą</summary>
+	/// <typeparam name="T">Formatas</typeparam><param name="builder"></param>
+	/// <param name="main">Pagrindinis atsakymo statusas</param>
+	/// <param name="err">Klaidos kodai</param><returns></returns>
+	public static RouteHandlerBuilder Response<T>(this RouteHandlerBuilder builder, int main=200, params int[] err) => builder.Produces<T>(main).Errors(err);
 }

@@ -5,9 +5,15 @@ using Npgsql;
 
 namespace App;
 
+/// <summary>Duomenų bazės konfiguracija</summary>
+public static class DBProps {
+
+	/// <summary>Duombazės prisijungimas</summary>
+	public static string ConnString { get; set; } = Startup.ConnStr;
+}
+
 /// <summary>Postgres konektorius</summary>
 public class DBExec : IDisposable {
-	private static string ConnString { get; set; } = "User ID=g9_app;Password=g9_app;Server=localhost;Port=5002;Database=G9;Integrated Security=true;Pooling=true;";
 	/// <summary>Duomenų bazės užklausų atvaizdavimas konsolėje</summary>
 	public static bool Debug { get; set; } = Config.GetBool("Config","DebugDB",false);
 	/// <summary>Duomenų bazės užklausa</summary>
@@ -19,12 +25,12 @@ public class DBExec : IDisposable {
 	private NpgsqlCommand? Cmd { get; set; }
 
 	private NpgsqlCommand Command(string sql){
-		Conn ??= new NpgsqlConnection(ConnString); Conn.Open();
+		Conn ??= new NpgsqlConnection(DBProps.ConnString); Conn.Open();
 		Cmd ??= new NpgsqlCommand(sql,Conn); Params?.Load(Cmd);
 		return Cmd;
 	}
 	private async Task<NpgsqlCommand> CommandAsync(string sql, CancellationToken ct){
-		Conn ??= new NpgsqlConnection(ConnString); await Conn.OpenAsync(ct);
+		Conn ??= new NpgsqlConnection(DBProps.ConnString); await Conn.OpenAsync(ct);
 		Cmd ??= new NpgsqlCommand(sql,Conn); Params?.Load(Cmd);
 		return Cmd;
 	}
@@ -80,6 +86,10 @@ public class DBExec : IDisposable {
 	/// <returns>Įrašų skaičius</returns>
 	public async Task<object?> ExecuteScalar(CancellationToken ct) { var ret = await(await CommandAsync(SQL,ct)).ExecuteScalarAsync(ct); Dispose(); return ret; }
 
+	/// <summary>Vykdyti SQL užklausą</summary>
+	/// <returns>Įrašų skaičius</returns>
+	public async Task<T?> ExecuteScalar<T>(CancellationToken ct) { var ret = await(await CommandAsync(SQL,ct)).ExecuteScalarAsync(ct); Dispose(); return ret is T t ? t: default; }
+
 
 	// To detect redundant calls
 	private bool IsDisposed;
@@ -134,9 +144,7 @@ public static class DBExtensions {
 
 
 	/// <summary>Atiduoti masyvo duomenis į API</summary>
-	/// <param name="rdr"></param>
-	/// <param name="wrt"></param>
-	/// <param name="ct"></param>
+	/// <param name="rdr"></param><param name="wrt"></param><param name="ct"></param>
 	/// <param name="flush">atiduodamas įrašų kiekis</param>
 	/// <returns></returns>
 	public static async Task Loop(NpgsqlDataReader rdr, Utf8JsonWriter wrt, CancellationToken ct, int flush=20){
@@ -152,6 +160,17 @@ public static class DBExtensions {
 		}
 	}
 	
+	/// <summary>Objekto duomenis į API</summary>
+	/// <param name="rdr"></param><param name="wrt"></param><param name="ct"></param>
+	/// <returns></returns>
+	public static async Task GetObject(NpgsqlDataReader rdr, Utf8JsonWriter wrt, CancellationToken ct){
+		var act= new List<Action<int>>();
+		var fct = rdr.FieldCount;
+		for(var i =0; i<fct; i++) act.Add(GetAct(rdr,wrt,i));
+		if (await rdr.ReadAsync(ct)) for(var i=0; i<fct ;i++) act[i](i);
+	}
+
+
 	/// <summary>Duomenų konvertavimo funkcija</summary>
 	/// <param name="rdr">Data reader</param>
 	/// <param name="wrt">JSON writer</param>

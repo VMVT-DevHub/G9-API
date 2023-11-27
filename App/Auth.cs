@@ -1,5 +1,3 @@
-using Npgsql.Replication;
-
 namespace App.Auth;
 
 
@@ -19,6 +17,7 @@ public static class Require {
 	/// <param name="ctx"></param><param name="next"></param><returns></returns>
 	public static async ValueTask<object?> AdminRole (EndpointFilterInvocationContext ctx, EndpointFilterDelegate next) =>
 		ctx.HttpContext.GetAuth() ? (ctx.HttpContext.GetUser()?.Admin?.Count>0 ? await next(ctx) : Error.E403(ctx.HttpContext)) : Error.E401(ctx.HttpContext);
+
 }
 
 
@@ -39,6 +38,16 @@ public class Error {
 	/// <summary>Prieigos klaida</summary>
 	public static E403 E403(HttpContext ctx, bool print=false) => Respond(Er403,ctx,print);
 	private static E403 Er403 { get; } = new();
+	/// <summary>Nerasto resurso klaida</summary>
+	public static E404 E404(HttpContext ctx, bool print=false) => Respond(Er404,ctx,print);
+	private static E404 Er404 { get; } = new();
+
+	/// <summary>Validacijos klaida</summary>
+	public static E422 E422(HttpContext ctx, bool print=false, params string[] str) {
+		var err = new E422();
+		foreach(var i in str) err.Details.Add(i);
+		return Respond(err,ctx,print);
+	}
 }
 
 
@@ -53,8 +62,8 @@ public class E401 : Error {
 	/// <example>Unauthorized</example>
 	public string Status { get; set; } = "Unauthorized";
 	/// <summary>Klaidos Žinutė</summary>
-	/// <example>Authorization is required for this resource</example>
-	public string Message { get; set; } = "Authorization is required for this resource";
+	/// <example>Reikalinga vartotojo autorizacija</example>
+	public string Message { get; set; } = "Reikalinga vartotojo autorizacija";
 }
 
 
@@ -67,7 +76,38 @@ public class E403 : Error {
 	/// <example>Forbidden</example>
 	public string Status { get; set; } = "Forbidden";
 	/// <summary>Klaidos Žinutė</summary>
-	/// <example>Authorization is required for this resource</example>
-	public string Message { get; set; } = "You don't have permission to access this resource";
+	/// <example>Jūs neturite prieigos prie šio resourso</example>
+	public string Message { get; set; } = "Jūs neturite prieigos prie šio resourso";
+
+}
+
+/// <summary>Vartotojo prieigos klaida</summary>
+public class E404 : Error {
+	/// <summary>Klaidos kodas</summary>
+	/// <example>404</example>
+	public override int Code { get; set; } = 404;
+	/// <summary>Klaidos statusas</summary>
+	/// <example>Not Found</example>
+	public string Status { get; set; } = "Not Found";
+	/// <summary>Klaidos Žinutė</summary>
+	/// <example>Resursas kurio ieškote neegzistuoja</example>
+	public string Message { get; set; } = "Resursas kurio ieškote neegzistuoja";
+
+}
+
+/// <summary>Vartotojo prieigos klaida</summary>
+public class E422 : Error {
+	/// <summary>Klaidos kodas</summary>
+	/// <example>422</example>
+	public override int Code { get; set; } = 422;
+	/// <summary>Klaidos statusas</summary>
+	/// <example>Validation Error</example>
+	public string Status { get; set; } = "Validation Error";
+	/// <summary>Klaidos Žinutė</summary>
+	/// <example>Duomenų validacijos klaida</example>
+	public string Message { get; set; } = "Duomenų validacijos klaida";
+	/// <summary>Klaidos informacija</summary>
+	/// <example>Validacijos informacija</example>
+	public List<string> Details { get; set; } = new();
 
 }
