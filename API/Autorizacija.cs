@@ -18,8 +18,9 @@ public static class Auth {
 	/// <summary>Vartotojo prisijungimas</summary>
 	/// <param name="ctx">Http Context</param>
 	/// <param name="ct">Cancellation Token</param>
-	public static async Task Login(HttpContext ctx,CancellationToken ct){
-		if(await VIISP.Auth.GetAuth(ctx,ct) is AuthRequestError err) err.Report(ctx);
+	/// <param name="r">Peradresavimo kelias</param>
+	public static async Task Login(HttpContext ctx,CancellationToken ct, string? r=null){
+		if(await VIISP.Auth.GetAuth(ctx,r,ct) is AuthRequestError err) err.Report(ctx);
 	}
 	
 	/// <summary>Vartotojo prisijungimas</summary>

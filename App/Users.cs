@@ -1,6 +1,8 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using App.Roles;
+using G9.Models;
 
 namespace App.Users;
 
@@ -19,10 +21,12 @@ public class User {
 	public string? Email { get; set; }
 	/// <summary>Telefono numeris</summary>
 	public string? Phone { get; set; }
+	/// <summary>Juridinio asmens kodas</summary>
+	public G9.Models.JA? JA { get; set; }
 	/// <summary>Prisijungusio vartotojo tipas</summary>
-	public List<long>? Roles { get; set; }
+	public HashSet<long>? Roles { get; set; }
 	/// <summary>Vartotojo rolės</summary>
-	public List<long>? Admin { get; set; }
+	public HashSet<long>? Admin { get; set; }
 
 	/// <summary>Vartotojo klaidų tikrinimas ir reportavimas</summary>
 	/// <param name="ctx"></param>
@@ -35,10 +39,17 @@ public class User {
 	public User GetRoles(){
 		using var db = new DBExec("SELECT role_name FROM app.user_roles LEFT JOIN app.roles on (usrl_role=role_id) WHERE usrl_user=@usr and role_name is not null","@usr",ID);
 		using var rdr = db.GetReader(); Roles = new(); Admin = new();
-		while(rdr.Read()) {
-			var rle = rdr.GetString(0).Split(".");
-			if(rle.Length>=2 && long.TryParse(rle[1],out var role)){
-				Roles.Add(role); if(rle.Length==3 && rle[2]=="admin") Admin.Add(role);
+
+		if(JA is not null){
+			var lst = new DBExec("SELECT vkl_id FROM gvts WHERE vkl_ja=@ja","@ja",JA.ID).GetList<long>();
+			foreach(var i in lst){ Roles.Add(i); Admin.Add(i); }
+		}
+		else {
+			while(rdr.Read()) {
+				var rle = rdr.GetString(0).Split(".");
+				if(rle.Length>=2 && long.TryParse(rle[1],out var role)){
+					Roles.Add(role); if(rle.Length==3 && rle[2]=="admin") Admin.Add(role);
+				}
 			}
 		}
 		return this;
@@ -57,7 +68,7 @@ public class User {
 	/// <param name="ctx"></param>
 	/// <returns>Prisijungęs vartotojas</returns>
 	public static User Login(long ak, string fname, string lname, string? email, string? phone, string? ja, HttpContext ctx)
-		=> Login(new User(){ AK=ak, FName=fname, LName=lname, Email=email, Phone=phone, Roles=long.TryParse(ja, out var num)?new(){num}:null },ctx);
+		=> Login(new User(){ AK=ak, FName=fname, LName=lname, Email=email, Phone=phone}.GetJA(ja) ,ctx);
 
 	private static User Login(User usr, HttpContext ctx, bool create=true){
 		using var db = new DBExec("SELECT id,fname,lname,email,phone FROM app.user_login(@ak,@ip,@ua)",("@ak",(object?)usr.ID ?? usr.AK),("@ip",ctx.GetIP()),("@ua",ctx.GetUA()));
@@ -66,17 +77,28 @@ public class User {
 			if(!(rdr.IsDBNull(0) || rdr.IsDBNull(1) || rdr.IsDBNull(2) || rdr.IsDBNull(3))) {
 				var usd = new User(){ ID=rdr.GetGuid(0), FName=rdr.GetString(1), LName=rdr.GetString(2), Email=rdr.GetStringN(3), Phone=rdr.GetStringN(4) };
 				usr.ID=usd.ID; usr.AK=null;
-				var ja = usr.Roles?.Count>0; 
+				var ja = usr.JA is not null;
 				if(usr.FName!=usd.FName || usr.LName!=usd.LName || 
 					//JA - neatnaujinam
 					(!ja && (usr.Email!=usd.Email || usr.Phone!=usd.Phone)))
 						if(Update(usr) is UserError upd) return upd;
-				if(ja) { usr.Email=usd.Email; usr.Phone=usd.Phone; usr.Admin=usr.Roles; return usr; }
+				if(ja) { usr.Email=usd.Email; usr.Phone=usd.Phone; }
 				return usr.GetRoles();
 			}
 			return new UserError(1102, "Vartotojo informacijos klaida", usr);
 		}
 		return create ? Login(Create(usr),ctx,false) : new UserError(1101,"Vartotojas nerastas",usr);
+	}
+
+	private User GetJA(string? id){
+		if(long.TryParse(id, out var ja) && ja>0){
+			using var db = new DBExec("SELECT ja_title,ja_adresas FROM jar.data where ja_id=@ja;","@ja",ja);
+			using var rdr = db.GetReader();
+			if(rdr.HasRows && rdr.Read())
+				JA = new(){ ID=ja, Title=rdr.GetStringN(0), Addr=rdr.GetStringN(1)};
+			else return new UserError(1117,"Juridinia asmuo nerastas registre",this);
+		}
+		return this;
 	}
 	private static User Create(User usr){
 		using var db = new DBExec("SELECT id,msg FROM app.user_add(@ak,@fname,@lname,@email,@phone);", ("@ak",usr.AK),("@fname",usr.FName),("@lname",usr.LName),("@email",usr.Email),("@phone",usr.Phone));
@@ -121,7 +143,7 @@ public class UserError : User {
 	public UserError Report(HttpContext ctx){
 		new DBExec("INSERT INTO app.log_error (log_code,log_msg,log_data,log_ip) VALUES (@code,@msg,@data,@ip);",
 			("@code",Code),("@msg",Message),("@data",ErrorData),("@ip",ctx.GetIP())).Execute();
-		ctx.Response.Redirect($"/klaida?id={Code}&msg={Convert.ToBase64String(Encoding.UTF8.GetBytes(Message))}");
+		ctx.Response.Redirect($"{Config.GetVal("Web","Path","/")}klaida?id={Code}&msg={Convert.ToBase64String(Encoding.UTF8.GetBytes(Message))}");
 		return this;
 	}
 }

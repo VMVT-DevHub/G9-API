@@ -40,30 +40,26 @@ app.MapGet("/api/login/evartai",Auth.Evartai).Swagger(
 // ).Produces(204);
 
 
-app.MapGet("/api/declar/{gvts}/{metai}",Deklaravimas.Get).Swagger(	
-	"Gauti deklaruojamų rodiklių sąrašą.",
-	"Gaunamas objektas"
+app.MapGet("/api/deklar/{gvts}/{metai}",Deklaravimas.Get).Swagger(	
+	"","Gaunamas objektas"
 ).Response<G9.Models.Deklaravimas>(200,401,403,404).AddEndpointFilter(Require.Role);
 
-app.MapPost("/api/declar/{gvts}/{metai}",Deklaravimas.Set).Swagger(	
- 	"Atnaujinti deklaruojamų metų detales",
- 	"Tuščias atsakymas"
+app.MapPost("/api/deklar/{gvts}/{metai}",Deklaravimas.Set).Swagger(	
+ 	"","Tuščias atsakymas"
 ).Response<G9.Models.Deklaravimas>(200,422,401,403,404).AddEndpointFilter(Require.Role);
 
+
 app.MapGet("/api/veiklos",Veiklos.Get).Swagger(	
-	"Gauti visas prisijungusio vartotojo G9 veiklas.",
-	"Gaunamas objektas"
+	"","Gaunamos prisijungusio vartotojo veiklos ir deklaruojami metai"
 ).Response<G9.Models.Veiklos>(200,401,403).AddEndpointFilter(Require.Role);
 
 
 
-/*
 app.MapGet("/api/rodikliai",Rodikliai.List).Swagger(	
-	"Gauti visus G9 rodiklius.",
-	"Gaunamas objektas"
-).Response<G9.Models.Rodikliai>(200);
+	"","Gaunamas pilnas rodiklių sąrašas"
+).Response<G9.Models.RodikliuSarasas>(200);
 
-
+/*
 app.MapGet("/api/rodiklis/{gvts}/{metai}",Rodikliai.Get).Swagger(	
 	"Gauti deklaruojamus metinius rodiklius veiklai",
 	"(Nenaudojamas)"

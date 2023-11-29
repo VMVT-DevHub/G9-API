@@ -56,8 +56,9 @@ public class Auth {
 
 	/// <summary>Vartotojo autorizacijos iniciavimas</summary>
 	/// <param name="ctx"></param>
+	/// <param name="r"></param>
 	/// <param name="ct"></param>
-	public static async Task<AuthRequest> GetAuth(HttpContext ctx, CancellationToken ct){
+	public static async Task<AuthRequest> GetAuth(HttpContext ctx, string? r, CancellationToken ct){
 		LockIP(ctx);
 		if(!ct.IsCancellationRequested) {
 			var msg = new StringContent($"{{\"host\":\"{Config.GetVal("Auth","Redirect","http://localhost:5000/api/login")}\"}}", new MediaTypeHeaderValue("application/json"));			
@@ -67,7 +68,7 @@ public class Auth {
 				if(response.IsSuccessStatusCode){
 					var tck = JsonSerializer.Deserialize<AuthTicket>(rsp);					
 					if(tck?.Ticket is not null){
-						var ath = new AuthRequest((Guid)tck.Ticket) { IP=ctx.GetIP(), Return = ctx.Request.Query.TryGetValue("r", out var r) ? r : "" };
+						var ath = new AuthRequest((Guid)tck.Ticket) { IP=ctx.GetIP(), Return = r };
 						Redirect.TryAdd(ath.Ticket??new(),ath);
 						ctx.Response.Redirect(tck.Url??"/");
 						return ath;
@@ -222,7 +223,7 @@ public class AuthRequestError : AuthRequest {
 	/// <returns></returns>
 	public AuthRequest Report(HttpContext ctx){
 		new DBExec("INSERT INTO app.log_error (log_code,log_msg,log_data,log_ip) VALUES (@code,@msg,@data,@ip);",("@code",Code),("@msg",Message),("@data",ErrorData),("@ip",ctx.GetIP())).Execute();
-		ctx.Response.Redirect(Return??$"/klaida?id={Code}{(Message is null?"":"&msg="+Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(Message)))}");
+		ctx.Response.Redirect(Return??$"{Config.GetVal("Web","Path","/")}klaida?id={Code}{(Message is null?"":"&msg="+Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(Message)))}");
 		return this;
 	}
 }

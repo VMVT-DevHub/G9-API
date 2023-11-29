@@ -8,7 +8,7 @@ namespace App;
 public static class Session {
 	private static ConcurrentDictionary<string, UserSession> Cache { get; set; } = new();
 
-	private static Random Rnd = new();
+	private static readonly Random Rnd = new();
 	private const string RndChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 	/// <summary>Atsitiktinio rakto funkcija</summary>
 	/// <param name="length">Rakto ilgis</param>
@@ -91,7 +91,7 @@ public static class Session {
 		ctx.Response.Cookies.Append("SSID", sess.SSID, new CookieOptions(){ 
 			//TODO: Set secure cookie for non-dev
 			SameSite=SameSiteMode.Lax, 
-			HttpOnly=true, Secure=true, Path="/api/", IsEssential=true, Expires = sess.Expire
+			HttpOnly=true, Secure=true, Path=$"{Config.GetVal("Web","Path","/")}api/", IsEssential=true, Expires = sess.Expire
 		});
 	}
 

@@ -22,10 +22,10 @@ public static class Startup {
 				c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo{Title="SwaggerAnnotation", Version="v1"});
 				c.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory,"G9.xml"));
 			});
-			builder.Services.AddMvc().AddJsonOptions(opt => opt.JsonSerializerOptions.PropertyNamingPolicy = null);
+			builder.Services.AddMvc().AddJsonOptions(opt => { opt.JsonSerializerOptions.PropertyNamingPolicy = null; opt.JsonSerializerOptions.WriteIndented=false; });
 		#endif
 		
-		builder.Services.ConfigureHttpJsonOptions( a => { a.SerializerOptions.PropertyNamingPolicy=null; });
+		builder.Services.ConfigureHttpJsonOptions( a => { a.SerializerOptions.PropertyNamingPolicy=null; a.SerializerOptions.WriteIndented=false; });
 
 		var app = builder.Build();
 

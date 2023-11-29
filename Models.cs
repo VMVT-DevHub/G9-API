@@ -1,14 +1,16 @@
 
+using App.API;
+
 namespace G9.Models;
 
 /// <summary>Deklaruojamų metų sąrašas veikloms pagal ūkio subjektus</summary>
 public class Veiklos {
 	/// <summary>Ūkio subjektai priskirti prisijungusiam vartotojui.</summary>
-	public List<JA>? JA { get; set; }
+	public ArrayModel<JA>? JA { get; set; }
 	/// <summary>Geriamo Vandens Tiekimo sistemų sąrašas</summary>
-	public List<GVTS>? GVTS { get; set; }
+	public ArrayModel<GVTS>? GVTS { get; set; }
 	/// <summary>Deklaruojami metai</summary>
-	public List<Deklaravimas>? Deklaracijos { get; set; }
+	public ArrayModel<Deklaravimas>? Deklaracijos { get; set; }
 }
 
 
@@ -41,8 +43,10 @@ public class Deklaravimas	{
 	public long GVTS { get; set; }
 	/// <summary>Deklaruojami metai</summary>
 	public int Metai { get; set; }
+	/// <summary>Deklaravimo stebėsena</summary>
+	public int Stebesenos { get; set; }
 	/// <summary>Deklaravimo statusas</summary>
-	public string? Statusas { get; set; }
+	public int Statusas { get; set; }
 	/// <summary>Deklaruojamo vandens kiekis m3/para</summary>
 	public double? Kiekis { get; set; }
 	/// <summary>Aptarnaujamų vartotojų skaičius</summary>
@@ -57,6 +61,7 @@ public class Deklaravimas	{
 	public string? RedagUser { get; set; }
 }
 
+
 /// <summary>Deklaravimo informacija</summary>
 public class DeklaravimasSet {
 	/// <summary>Deklaruojamo vandens kiekis m3/para</summary>
@@ -66,28 +71,53 @@ public class DeklaravimasSet {
 }
 
 
+/// <summary>Json masyvo modelis</summary>
+/// <typeparam name="T"></typeparam>
+public class ArrayModel<T> {
+	/// <summary>Duomenų aprašas</summary>
+	public T? Model { get; set; }
+	/// <summary>Duomenų laukai</summary>
+	public List<string>? Fields { get; set; }
+	/// <summary>Duomenų masyvas</summary>
+	public List<List<object>>? Data { get; set; }
+	/// <summary>Duomenų skaitinės reikšmės</summary>
+	public Dictionary<string,Dictionary<string,string>>? Lookup { get; set; }
+}
 
 
+/// <summary>Visų galimų rodiklių sąrašas</summary>
+public class RodikliuSarasas {
+	/// <summary>Rodikliai</summary>
+	public ArrayModel<Rodiklis>? Rodikliai { get; set; }
+	/// <summary>Dažnumo grupės</summary>
+	public ArrayModel<Daznumas>? Daznumas { get; set; }
+	/// <summary>Rodiklių sąrašas stebėsenoms</summary>
+	public List<Stebesenos>? Stebesenos { get; set; }
+}
 
+/// <summary>Stebėsenų informacija</summary>
+public class Stebesenos {
+	/// <summary>Galimų rodiklių sąrašas stebėsenoms</summary>
+	public int ID { get; set; }
+	/// <summary>Stebėsenų padavinimas</summary>
+	public string? Pavadinimas { get; set; }
+	/// <summary>Galimų rodiklių sąrašas</summary>
+	public List<int>? Rodikliai { get; set; }
+}
 
-
-/// <summary>Pilnas rodiklių sąrašas deklaruojamiems metams</summary>
-public class Rodikliai : List<Rodiklis> {}
 
 /// <summary>Rodiklio informacija</summary>
 public class Rodiklis {
 	/// <summary>Rodiklio unikalus numeris</summary>
 	public int ID { get; set; }
-	/// <summary>Rodiklio EU numeris</summary>
-	public string? EID { get; set; }
-	/// <summary>Rodiklio stebėsenos pavadinimas</summary>
-	public string? Track { get; set; }
 	/// <summary>Rodiklio grupė</summary>
-	public string? Group { get; set; }
+	public int Grupe { get; set; }
+	/// <summary>Rodiklio EU numeris</summary>
+	public string? Kodas { get; set; }
 	/// <summary>Rodiklio pavadinimas</summary>
-	public string? Title { get; set; }
+	public string? Pavadinimas { get; set; }
 	/// <summary>Minimalus tyrimų skaičius metams</summary>
-	public int Freq { get; set; }
+	public string? Daznumas { get; set; }
 	/// <summary>Mažiausia rodiklio reikšmė</summary>
 	public float Min { get; set; }
 	/// <summary>Didžiausia rodiklio reikšmė</summary>
@@ -95,13 +125,15 @@ public class Rodiklis {
 	/// <summary>Reikšmės mažiausias žingsnis</summary>
 	public float Step { get; set; }
 	/// <summary>Matavimo vienetai</summary>
-	public string? Unit { get; set; }
+	public string? Vnt { get; set; }
 	/// <summary>Aprašymas</summary>
-	public string? Descr { get; set; }
+	public string? Aprasymas { get; set; }
 }
 
+/// <summary>Rodiklių deklaravimo dažnumas metams</summary>
+public class Daznumas {
 
-
+}
 
 
 
