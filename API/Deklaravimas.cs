@@ -1,8 +1,6 @@
 using System.Text.Json;
-using System.Windows.Markup;
 using App.Auth;
 using G9.Models;
-using Microsoft.OpenApi.Models;
 
 namespace App.API;
 
@@ -59,7 +57,6 @@ public static class Veiklos {
 		await DBExtensions.PrintArray("SELECT * FROM public.v_daznumas;", null, writer, ct,  DaznumasVal);
 
 		writer.WritePropertyName("Stebesenos");
-
 		writer.WriteStartArray();
 		foreach(var i in Veiklos.VeiklosVal["Stebesenos"]){
 			if(int.TryParse(i.Key, out var key)){
@@ -72,16 +69,36 @@ public static class Veiklos {
 			}
 		}
 		writer.WriteEndArray();
-
 		writer.WriteEndObject();
 		await writer.FlushAsync(ct);
-		
  	}
 
-// 	public static async Task Get(HttpContext ctx,CancellationToken ct, long gvts, long metai){
-// 		ctx.Response.ContentType="application/json";
-// 		await ctx.Response.WriteAsync("{}",ct);
-// 	}
+}
+
+
+/// <summary>Reikšmių API</summary>
+public static class Reiksmes{
+	/// <summary>Gauti suvestas rodiklių reikšmes</summary>
+	/// <param name="ctx"></param>
+	/// <param name="ct"></param>
+	/// <param name="deklaracija">Geriamo vandens tiekimo sistems</param>
+	/// <returns></returns>
+	public static async Task Get(HttpContext ctx, long deklaracija,CancellationToken ct){
+		var gvts = await new DBExec("SELECT dkl_gvts FROM deklaravimas WHERE dkl_id=@id;", "@id", deklaracija).ExecuteScalar<long>(ct);
+		if(gvts>0){
+			if(ctx.GetUser()?.Roles?.Contains(gvts) == true) await PrintRodikl(ctx,deklaracija,ct);
+			else Error.E403(ctx,true);
+		} else Error.E404(ctx,true);
+	}
+	
+	private static async Task PrintRodikl(HttpContext ctx, long deklaracija, CancellationToken ct){
+		ctx.Response.ContentType="application/json";
+		var options = new JsonWriterOptions{ Indented = false }; //todo: if debug
+		using var writer = new Utf8JsonWriter(ctx.Response.BodyWriter, options);
+		await DBExtensions.PrintArray("SELECT * FROM public.v_reiksmes where \"Deklaracija\"=@id;", new(("@ID",deklaracija)), writer, ct);
+		await writer.FlushAsync(ct);
+		return;
+	}
 // 	public static async Task Set(HttpContext ctx,CancellationToken ct, long gvts, long metai){
 // 		ctx.Response.ContentType="application/json";
 // 		await ctx.Response.WriteAsync("{}",ct);
@@ -132,7 +149,6 @@ public static class Deklaravimas {
 		if(ctx.GetUser()?.Roles?.Contains(gvts) == true){
 			var param = new DBParams(("@gvts",gvts), ("@metai",metai), ("@kiekis",dcl.Kiekis),("@vartot",dcl.Vartotojai));
 			var stat = await new DBExec("SELECT dkl_status FROM public.deklaravimas WHERE dkl_gvts=@gvts and dkl_metai=@metai;", param).ExecuteScalar<int?>(ct);
-
 			if(stat is null) Error.E404(ctx, true);
 			else if(stat==3) Error.E422(ctx,true,$"Negalima keisti jau deklaruotų duomenų");
 			else {

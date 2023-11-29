@@ -39,6 +39,8 @@ public class GVTS {
 
 /// <summary>Deklaruojamų metų informacija</summary>
 public class Deklaravimas	{
+	/// <summary>Deklaracijos ID</summary>
+	public int ID { get; set; }
 	/// <summary>Gerimojo vandens tiekimo sistema</summary>
 	public long GVTS { get; set; }
 	/// <summary>Deklaruojami metai</summary>
@@ -135,6 +137,19 @@ public class Daznumas {
 
 }
 
+/// <summary>Rodiklio delkaravimo reikšmė</summary>
+public class RodiklioReiksme {
+	/// <summary>Reikšmės identifikatorius</summary>
+	public long ID { get; set; }
+	/// <summary>Deklaracijos identifikatorius</summary>
+	public int Deklaracija { get; set; }
+	/// <summary>Rodiklio identifikatorius</summary>
+	public int Rodiklis { get; set; }
+	/// <summary>Mėginio paimimo data</summary>
+	public DateOnly Date { get; set; }
+	/// <summary>Rodiklio reikšmė</summary>
+	public double Reiksme { get; set; }
+}
 
 
 

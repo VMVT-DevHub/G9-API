@@ -57,23 +57,24 @@ app.MapGet("/api/veiklos",Veiklos.Get).Swagger(
 
 app.MapGet("/api/rodikliai",Rodikliai.List).Swagger(	
 	"","Gaunamas pilnas rodiklių sąrašas"
-).Response<G9.Models.RodikliuSarasas>(200);
+).Response<G9.Models.RodikliuSarasas>(200).AddEndpointFilter(Require.Login);
 
-/*
-app.MapGet("/api/rodiklis/{gvts}/{metai}",Rodikliai.Get).Swagger(	
-	"Gauti deklaruojamus metinius rodiklius veiklai",
-	"(Nenaudojamas)"
-).Response<G9.Models.Rodikliai>(200);
 
-app.MapPost("/api/rodiklis/{gvts}/{metai}",Rodikliai.Set).Swagger(	
-	"Išsaugiti rodiklius veiklai",
-	"Siunčiamas objektas"
-).Response<G9.Models.Rodikliai>(200);
 
-app.MapDelete("/api/rodiklis/{gvts}/{metai}",Rodikliai.Del).Swagger(	
-	"Pašalinti rodiklį",
-	""
-).Produces(204);
 
-*/
+app.MapGet("/api/reiksmes/{deklaracija}",Reiksmes.Get).Swagger(	
+	"","Gauti deklaruojamų rodiklių reikšmes"
+).Response<G9.Models.ArrayModel<G9.Models.RodiklioReiksme>>(200,401,403,404).AddEndpointFilter(Require.Role);
+
+// app.MapPost("/api/reiksmes/{gvts}/{metai}",Rodikliai.Set).Swagger(	
+// 	"Išsaugiti rodiklius veiklai",
+// 	"Siunčiamas objektas"
+// ).Response<G9.Models.Rodikliai>(200);
+
+// app.MapDelete("/api/reiksmes/{gvts}/{metai}",Rodikliai.Del).Swagger(	
+// 	"Pašalinti rodiklį",
+// 	""
+// ).Produces(204);
+
+
 app.Run();
