@@ -25,3 +25,15 @@ jobs:
           name: gitrelease_${{github.run_number}}
           path: /home/runner/work/GitRelease/release
           retention-days: 5
+
+      - name: release
+        uses: actions/create-release@v1
+        id: create_release
+        with:
+           draft: false
+           prerelease: false
+           release_name: gitrelease_${{github.run_number}}
+           tag_name: ${{ github.ref }}
+           body_path: CHANGELOG.md
+        env:
+           GITHUB_TOKEN: ${{ github.token }}
