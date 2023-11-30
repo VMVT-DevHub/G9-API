@@ -61,7 +61,7 @@ public class Auth {
 	public static async Task<AuthRequest> GetAuth(HttpContext ctx, string? r, CancellationToken ct){
 		LockIP(ctx);
 		if(!ct.IsCancellationRequested) {
-			var msg = new StringContent($"{{\"host\":\"{Config.GetVal("Auth","Redirect","http://localhost:5000/api/login")}\"}}", new MediaTypeHeaderValue("application/json"));			
+			var msg = new StringContent($"{{\"host\":\"{Config.GetVal("Auth","Redirect","http://localhost:5501/auth/login")}\"}}", new MediaTypeHeaderValue("application/json"));			
 			try {
 				using var response = await HClient.PostAsync(Config.GetVal("Auth","GetSignin","/auth/evartai/sign"), msg, ct);
 				var rsp = await response.Content.ReadAsStringAsync(ct);

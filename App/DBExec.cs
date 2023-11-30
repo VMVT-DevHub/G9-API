@@ -280,7 +280,7 @@ public static class DBExtensions {
 		else if(tp==typeof(DateTime)) {
 			var dtp = rdr.GetDataTypeName(i);
 			if(dtp == "date") return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNull(nm); else wrt.WriteString(nm,rdr.GetDateTime(i).ToString("yyyy-MM-dd"));};
-			return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNull(nm); else wrt.WriteString(nm,rdr.GetDateTime(i));};
+			return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNull(nm); else wrt.WriteString(nm,rdr.GetDateTime(i).ToString("yyyy-MM-ddTHH:mm:ssZ"));};
 		}
 		else if(tp==typeof(decimal)) return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNull(nm); else wrt.WriteNumber(nm,rdr.GetDecimal(i));};
 		else if(tp==typeof(double)) return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNull(nm); else wrt.WriteNumber(nm,rdr.GetDouble(i));};
@@ -307,7 +307,7 @@ public static class DBExtensions {
 		else if(tp==typeof(DateTime)) {
 			var dtp = rdr.GetDataTypeName(i);
 			if(dtp == "date") return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNullValue(); else wrt.WriteStringValue(rdr.GetDateTime(i).ToString("yyyy-MM-dd"));};
-			return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNullValue(); else {wrt.WriteStringValue(rdr.GetDateTime(i));}};
+			return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNullValue(); else {wrt.WriteStringValue(rdr.GetDateTime(i).ToString("yyyy-MM-ddTHH:mm:ssZ"));}};
 		}
 		else if(tp==typeof(decimal)) return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNullValue(); else wrt.WriteNumberValue(rdr.GetDecimal(i));};
 		else if(tp==typeof(double)) return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNullValue(); else wrt.WriteNumberValue(rdr.GetDouble(i));};

@@ -91,7 +91,7 @@ public static class Session {
 		ctx.Response.Cookies.Append("SSID", sess.SSID, new CookieOptions(){ 
 			//TODO: Set secure cookie for non-dev
 			SameSite=SameSiteMode.Lax, 
-			HttpOnly=true, Secure=true, Path=$"{Config.GetVal("Web","Path","/")}api/", IsEssential=true, Expires = sess.Expire
+			HttpOnly=true, Secure=true, Path=$"{Config.GetVal("Web","Path","/")}", IsEssential=true, Expires = sess.Expire
 		});
 	}
 

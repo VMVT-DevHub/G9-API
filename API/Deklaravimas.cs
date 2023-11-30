@@ -204,7 +204,7 @@ public static class Deklaravimas {
 	/// <param name="metai">Deklaruojami metai</param>
 	/// <param name="dcl">Deklaruojami duomenys</param>
 	/// <param name="ct"></param><returns></returns>
-	public static async Task Set(HttpContext ctx, long gvts, int metai, DeklaravimasSet dcl, CancellationToken ct){
+	public static async Task Set(HttpContext ctx, long gvts, int metai, [FromBody] DeklaracijaSet dcl, CancellationToken ct){
 		ctx.Response.ContentType="application/json";
 		if(ctx.GetUser()?.Roles?.Contains(gvts) == true){
 			var param = new DBParams(("@gvts",gvts), ("@metai",metai), ("@kiekis",dcl.Kiekis),("@vartot",dcl.Vartotojai));
@@ -218,33 +218,53 @@ public static class Deklaravimas {
 		} else Error.E403(ctx,true);
 	}
 
-	
+
+	/// <summary>Deklaracijos validacija</summary>
+	/// <param name="ctx"></param>
+	/// <param name="deklaracija">Deklaracijos ID</param>
+	/// <param name="ct"></param><returns></returns>
+	public static async Task Valid(HttpContext ctx, long deklaracija, CancellationToken ct){
+		if(await Validate(ctx,deklaracija,ct)){
+			
+		}
+	}
+
 	/// <summary>Deklaracijos pateikimas</summary>
 	/// <param name="ctx"></param>
 	/// <param name="deklaracija">Deklaracijos ID</param>
 	/// <param name="ct"></param><returns></returns>
-	public static async Task Submit(HttpContext ctx, long deklaracija, CancellationToken ct){
+	public static async Task Submit(HttpContext ctx, long deklaracija, [FromBody] string data, CancellationToken ct){
+		if(await Validate(ctx,deklaracija,ct)){
+
+		}
+	}
+	
+	/// <summary>Deklaracijos neatitikimų pildymas</summary>
+	/// <param name="ctx"></param>
+	/// <param name="deklaracija">Deklaracijos ID</param>
+	/// <param name="ct"></param><returns></returns>
+	public static async Task Update(HttpContext ctx, long deklaracija, [FromBody] string data, CancellationToken ct){
+		if(await Validate(ctx,deklaracija,ct)){
+			
+		}
+	}
+
+	private static async Task<bool> Validate(HttpContext ctx, long deklaracija, CancellationToken ct){
 		using var db = new DBExec("SELECT dkl_gvts, dkl_status, dkl_metai, dkl_kiekis FROM deklaravimas WHERE dkl_id=@id;","@id",deklaracija);
 		using var rdr = await db.GetReader(ct);
 		if(rdr.Read()){
-			if(ctx.GetUser()?.Roles?.Contains(rdr.GetInt64(0)) == true){		
-				var status = rdr.GetInt32(1);
-				if(status==3) Error.E422(ctx,true,$"Ši deklaracija jau pateikta.");
-				if(status==1) Error.E422(ctx,true,$"Šios deklaracijos pateikti negalima.");
-				else if (status==2) {
-					if(rdr.GetIntN(3)>0) {
-
-						//Do other stuff
-
-						//Find duplicates,
-
-						//await new DBExec("DELETE FROM public.reiksmes WHERE rks_deklar=@id and rks_id = ANY(@lst)",("@id",deklaracija),("@lst",data)).Execute(ct);
-						//TODO: Log stuff;
-						ctx.Response.StatusCode=204; await ctx.Response.CompleteAsync();
-					} else Error.E422(ctx,true,"Neįvestas deklaruojamas vandens kiekis.");
-				}
-				else Error.E422(ctx,true,"Netpažintas deklaracijos statusas.");
+			if(ctx.GetUser()?.Roles?.Contains(rdr.GetInt64(0)) == true){	
+				if(rdr.GetIntN(3)>0) {	
+					var status = rdr.GetInt32(1);
+					if(status==3) Error.E422(ctx,true,$"Ši deklaracija jau pateikta.");
+					else {					
+						if(status!=2 && ctx.Request.Method=="POST") 
+							Error.E422(ctx,true,$"Šios deklaracijos pateikti negalima.");
+						else return true;
+					}
+				} else Error.E422(ctx,true,"Neįvestas deklaruojamas vandens kiekis.");
 			} else Error.E403(ctx,true);
 		} else Error.E404(ctx,true);
+		return false;
 	}
 }
