@@ -56,10 +56,12 @@ public class Deklaravimas	{
 	/// <summary>Deklaravimo data</summary>
 	public DateTime? DeklarDate { get; set; }
 	/// <summary>Deklaravęs vartotojas</summary>
+	/// <example>Vardas Pavardė</example>
 	public string? DeklarUser { get; set; }
 	/// <summary>Paskutinė redagavimo data</summary>
 	public DateTime? RedagDate { get; set; }
 	/// <summary>Paskurinis redagavęs vartotojas</summary>
+	/// <example>Vardas Pavardė</example>
 	public string? RedagUser { get; set; }
 }
 
@@ -140,19 +142,33 @@ public class Daznumas {
 /// <summary>Rodiklio delkaravimo reikšmė</summary>
 public class RodiklioReiksme {
 	/// <summary>Reikšmės identifikatorius</summary>
+	/// <example>123</example>
 	public long ID { get; set; }
 	/// <summary>Deklaracijos identifikatorius</summary>
+	/// <example>12</example>
 	public int Deklaracija { get; set; }
 	/// <summary>Rodiklio identifikatorius</summary>
+	/// <example>23</example>
 	public int Rodiklis { get; set; }
 	/// <summary>Mėginio paimimo data</summary>
-	public DateOnly Date { get; set; }
+	public DateOnly Data { get; set; }
 	/// <summary>Rodiklio reikšmė</summary>
+	/// <example>23.4</example>
 	public double Reiksme { get; set; }
 }
 
 
-
+/// <summary>Rodiklio reikšmės įvedimas</summary>
+public class RodiklisSet {
+	/// <summary>Rodiklio identifikatorius</summary>
+	/// <example>1</example>
+	public int Rodiklis { get; set; }
+	/// <summary>Mėginio paimimo data</summary>
+	public DateOnly Data { get; set; }
+	/// <summary>Rodiklio reikšmė</summary>
+	/// <example>23.4</example>
+	public double Reiksme { get; set; }
+}
 
 
 

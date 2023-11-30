@@ -1,6 +1,10 @@
+using System.Data;
 using System.Text.Json;
 using App.Auth;
 using G9.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using Npgsql.Replication.TestDecoding;
 
 namespace App.API;
 
@@ -99,14 +103,70 @@ public static class Reiksmes{
 		await writer.FlushAsync(ct);
 		return;
 	}
-// 	public static async Task Set(HttpContext ctx,CancellationToken ct, long gvts, long metai){
-// 		ctx.Response.ContentType="application/json";
-// 		await ctx.Response.WriteAsync("{}",ct);
-// 	}
-// 	public static async Task Del(HttpContext ctx,CancellationToken ct, long gvts, long metai, int id){
-// 		ctx.Response.ContentType="application/json";
-// 		await ctx.Response.WriteAsync("{}",ct);
-// 	}
+	/// <summary>Įrašyti rodiklio reikšmę</summary>
+	/// <param name="ctx"></param>
+	/// <param name="deklaracija">Deklaracijos ID</param>
+	/// <param name="data">Rodiklio reikšmių masyvas</param>
+	/// <param name="ct"></param>
+	/// <returns></returns>
+ 	public static async Task Set(HttpContext ctx, long deklaracija, List<RodiklisSet> data ,CancellationToken ct){
+		using var db = new DBExec("SELECT dkl_gvts, dkl_status, dkl_metai FROM deklaravimas WHERE dkl_id=@id;","@id",deklaracija);
+		using var rdr = await db.GetReader(ct);
+		if(rdr.Read()){
+			var usr = ctx.GetUser();
+			if(usr?.ID is not null && usr.Roles?.Contains(rdr.GetInt64(0)) == true){			
+				if(rdr.GetInt32(1)==3) Error.E422(ctx,true,$"Negalima keisti jau deklaruotų duomenų");
+				else {
+					var flush = Config.GetInt("DBBatch","Reiksmes",100);
+					var cnt = flush;
+					var metai = rdr.GetInt32(2);
+					var rod = new List<int>();
+					var dte = new List<DateOnly>();
+					var val = new List<double>();
+					foreach(var i in data){
+						if(i.Data.Year!=metai) { Error.E422(ctx,true,"Įrašo data neatitinka deklaruojamų metų"); return; }
+						rod.Add(i.Rodiklis); dte.Add(i.Data); val.Add(i.Reiksme);
+						if(cnt--<1){ await WriteReiksmes(deklaracija,usr.ID,rod,dte,val,ct); cnt=flush;  }
+					}
+					await WriteReiksmes(deklaracija,usr.ID,rod,dte,val,ct);
+					//TODO: Log stuff;
+					ctx.Response.StatusCode=204;
+					await ctx.Response.CompleteAsync();
+				}
+			} else Error.E403(ctx,true);
+		} else Error.E404(ctx,true);
+ 	}
+
+	private static async Task<int> WriteReiksmes(long deklaracija, Guid? user, List<int> rodk, List<DateOnly> date, List<double> reiksme, CancellationToken ct){
+		var ret = 0;
+		if(rodk.Count>0) {
+			ret = await new DBExec("INSERT into public.reiksmes (rks_deklar,rks_user,rks_rodiklis,rks_date,rks_reiksme) SELECT @id, @usr, t.* FROM unnest(@rod,@date,@val) t;",
+			("@id",deklaracija),("@usr",user),("@rod",rodk),("@date",date),("@val",reiksme)).Execute(ct);
+		}
+		rodk.Clear(); date.Clear(); reiksme.Clear();
+		return ret;
+	}
+
+	/// <summary>Rodiklio reikšmių trynimas</summary>
+	/// <param name="ctx"></param>
+	/// <param name="deklaracija">Deklaracijos ID</param>
+	/// <param name="data">Įvedimo identifikatorių masyvas</param>
+	/// <param name="ct"></param>
+	/// <returns></returns>
+ 	public static async Task Del(HttpContext ctx, long deklaracija, [FromBody] List<long> data, CancellationToken ct){
+		using var db = new DBExec("SELECT dkl_gvts, dkl_status, dkl_metai FROM deklaravimas WHERE dkl_id=@id;","@id",deklaracija);
+		using var rdr = await db.GetReader(ct);
+		if(rdr.Read()){
+			if(ctx.GetUser()?.Roles?.Contains(rdr.GetInt64(0)) == true){			
+				if(rdr.GetInt32(1)==3) Error.E422(ctx,true,$"Negalima keisti jau deklaruotų duomenų");
+				else {
+					 await new DBExec("DELETE FROM public.reiksmes WHERE rks_deklar=@id and rks_id = ANY(@lst)",("@id",deklaracija),("@lst",data)).Execute(ct);
+					//TODO: Log stuff;
+					ctx.Response.StatusCode=204; await ctx.Response.CompleteAsync();
+				}
+			} else Error.E403(ctx,true);
+		} else Error.E404(ctx,true);
+ 	}
 }
 
 
@@ -124,7 +184,7 @@ public static class Deklaravimas {
 
 	private static async Task PrintDeklar(HttpContext ctx, long gvts, int metai, CancellationToken ct){
 		using var db = new DBExec("SELECT * FROM public.v_deklar WHERE \"GVTS\"=@gvts and \"Metai\"=@metai;", ("@gvts",gvts), ("@metai",metai));
-		using var rdr = await db.GetReaderAsync(ct);
+		using var rdr = await db.GetReader(ct);
 		if(rdr.HasRows){
 			ctx.Response.ContentType="application/json";
 			var options = new JsonWriterOptions{ Indented = false }; //todo: if debug
@@ -156,5 +216,35 @@ public static class Deklaravimas {
 				await PrintDeklar(ctx,gvts,metai,ct);
 			}
 		} else Error.E403(ctx,true);
+	}
+
+	
+	/// <summary>Deklaracijos pateikimas</summary>
+	/// <param name="ctx"></param>
+	/// <param name="deklaracija">Deklaracijos ID</param>
+	/// <param name="ct"></param><returns></returns>
+	public static async Task Submit(HttpContext ctx, long deklaracija, CancellationToken ct){
+		using var db = new DBExec("SELECT dkl_gvts, dkl_status, dkl_metai, dkl_kiekis FROM deklaravimas WHERE dkl_id=@id;","@id",deklaracija);
+		using var rdr = await db.GetReader(ct);
+		if(rdr.Read()){
+			if(ctx.GetUser()?.Roles?.Contains(rdr.GetInt64(0)) == true){		
+				var status = rdr.GetInt32(1);
+				if(status==3) Error.E422(ctx,true,$"Ši deklaracija jau pateikta.");
+				if(status==1) Error.E422(ctx,true,$"Šios deklaracijos pateikti negalima.");
+				else if (status==2) {
+					if(rdr.GetIntN(3)>0) {
+
+						//Do other stuff
+
+						//Find duplicates,
+
+						//await new DBExec("DELETE FROM public.reiksmes WHERE rks_deklar=@id and rks_id = ANY(@lst)",("@id",deklaracija),("@lst",data)).Execute(ct);
+						//TODO: Log stuff;
+						ctx.Response.StatusCode=204; await ctx.Response.CompleteAsync();
+					} else Error.E422(ctx,true,"Neįvestas deklaruojamas vandens kiekis.");
+				}
+				else Error.E422(ctx,true,"Netpažintas deklaracijos statusas.");
+			} else Error.E403(ctx,true);
+		} else Error.E404(ctx,true);
 	}
 }

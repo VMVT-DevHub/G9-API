@@ -20,7 +20,6 @@ public static class Require {
 
 }
 
-
 /// <summary>Klaidos standartinis modelis</summary>
 public class Error {
 	/// <summary>Klaidos kodas</summary>

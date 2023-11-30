@@ -61,7 +61,7 @@ public class DBExec : IDisposable {
 
 	/// <summary>Gauti duomenų skaitytuvą</summary>
 	/// <returns>NpgsqlDataReader</returns>
-	public async Task<NpgsqlDataReader> GetReaderAsync(CancellationToken ct) => await (await CommandAsync(SQL,ct)).ExecuteReaderAsync(ct);
+	public async Task<NpgsqlDataReader> GetReader(CancellationToken ct) => await (await CommandAsync(SQL,ct)).ExecuteReaderAsync(ct);
 
 	/// <summary>Vykdyti SQL užklausą</summary>
 	/// <returns>Įrašų skaičius</returns>
@@ -107,7 +107,7 @@ public class DBExec : IDisposable {
 	/// <param name="ct"></param>
 	/// <returns>Masyvas</returns>
 	public async Task<List<T>> GetListAsync<T>(CancellationToken ct, int col=0){
-		using var rdr =  await GetReaderAsync(ct);
+		using var rdr =  await GetReader(ct);
 		var ret = new List<T>();
 		while(await rdr.ReadAsync(ct)) if(!rdr.IsDBNull(col)) ret.Add(await rdr.GetFieldValueAsync<T>(col));
 		Dispose(); return ret;
@@ -158,7 +158,7 @@ public static class DBExtensions {
 	/// <param name="flush">atiduodamas įrašų kiekis</param>
 	/// <returns></returns>
 	public static async Task PrintObjectArray(string query, DBParams? dbparams,Utf8JsonWriter wrt, CancellationToken ct,int flush=20){
-		using var rdr = await new DBExec(query, dbparams??new()).GetReaderAsync(ct);
+		using var rdr = await new DBExec(query, dbparams??new()).GetReader(ct);
 		wrt.WriteStartArray();
 		await LoopObjects(rdr,wrt,ct,flush);
 		wrt.WriteEndArray();
@@ -173,7 +173,7 @@ public static class DBExtensions {
 	/// <param name="flush">atiduodamas įrašų kiekis</param>
 	/// <returns></returns>
 	public static async Task PrintArray(string query, DBParams? dbparams,Utf8JsonWriter wrt, CancellationToken ct,CachedLookup? lookup=null,int flush=20){
-		using var rdr = await new DBExec(query, dbparams??new()).GetReaderAsync(ct);
+		using var rdr = await new DBExec(query, dbparams??new()).GetReader(ct);
 		wrt.WriteStartObject();
 		wrt.WritePropertyName("Fields");
 		wrt.WriteStartArray();
@@ -202,7 +202,7 @@ public static class DBExtensions {
 	/// <param name="flush">atiduodamas įrašų kiekis</param>
 	/// <returns></returns>
 	public static async Task PrintList(string query, DBParams? dbparams,Utf8JsonWriter wrt, CancellationToken ct,int field=0,int flush=200){
-		using var rdr = await new DBExec(query, dbparams??new()).GetReaderAsync(ct);
+		using var rdr = await new DBExec(query, dbparams??new()).GetReader(ct);
 		var act = GetAct(rdr,wrt,0);
 		var cnt=flush;
 		wrt.WriteStartArray();
@@ -277,7 +277,11 @@ public static class DBExtensions {
 		if(tp==typeof(bool)) return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNull(nm); else wrt.WriteBoolean(nm,rdr.GetBoolean(i));};
 		else if(tp==typeof(byte)) return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNull(nm); else wrt.WriteNumber(nm,rdr.GetByte(i));};
 		else if(tp==typeof(char)) return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNull(nm); else wrt.WriteNumber(nm,rdr.GetChar(i));};
-		else if(tp==typeof(DateTime)) return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNull(nm); else wrt.WriteString(nm,rdr.GetDateTime(i));};
+		else if(tp==typeof(DateTime)) {
+			var dtp = rdr.GetDataTypeName(i);
+			if(dtp == "date") return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNull(nm); else wrt.WriteString(nm,rdr.GetDateTime(i).ToString("yyyy-MM-dd"));};
+			return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNull(nm); else wrt.WriteString(nm,rdr.GetDateTime(i));};
+		}
 		else if(tp==typeof(decimal)) return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNull(nm); else wrt.WriteNumber(nm,rdr.GetDecimal(i));};
 		else if(tp==typeof(double)) return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNull(nm); else wrt.WriteNumber(nm,rdr.GetDouble(i));};
 		else if(tp==typeof(float)) return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNull(nm); else wrt.WriteNumber(nm,rdr.GetFloat(i));};
@@ -300,7 +304,11 @@ public static class DBExtensions {
 		if(tp==typeof(bool)) return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNullValue(); else wrt.WriteBooleanValue(rdr.GetBoolean(i));};
 		else if(tp==typeof(byte)) return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNullValue(); else wrt.WriteNumberValue(rdr.GetByte(i));};
 		else if(tp==typeof(char)) return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNullValue(); else wrt.WriteNumberValue(rdr.GetChar(i));};
-		else if(tp==typeof(DateTime)) return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNullValue(); else wrt.WriteStringValue(rdr.GetDateTime(i));};
+		else if(tp==typeof(DateTime)) {
+			var dtp = rdr.GetDataTypeName(i);
+			if(dtp == "date") return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNullValue(); else wrt.WriteStringValue(rdr.GetDateTime(i).ToString("yyyy-MM-dd"));};
+			return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNullValue(); else {wrt.WriteStringValue(rdr.GetDateTime(i));}};
+		}
 		else if(tp==typeof(decimal)) return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNullValue(); else wrt.WriteNumberValue(rdr.GetDecimal(i));};
 		else if(tp==typeof(double)) return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNullValue(); else wrt.WriteNumberValue(rdr.GetDouble(i));};
 		else if(tp==typeof(float)) return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNullValue(); else wrt.WriteNumberValue(rdr.GetFloat(i));};

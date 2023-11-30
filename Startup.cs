@@ -1,6 +1,7 @@
 
 using System.Data.Common;
 using App.Auth;
+using Microsoft.AspNetCore.Diagnostics;
 
 /// <summary>Application initial startup class</summary>
 public static class Startup {
@@ -29,12 +30,24 @@ public static class Startup {
 
 		var app = builder.Build();
 
+		app.UseExceptionHandler(exh=>exh.Run(HandleError));
+
 		#if DEBUG //Disable Swagger
 			app.UseSwagger(); app.UseSwaggerUI();
 		#endif
 		return app;
 	}
 
+
+	private static async Task HandleError(HttpContext ctx){
+		var rsp = ctx.Response;
+
+		var ex = ctx.Features.Get<IExceptionHandlerFeature>();
+
+		if(ex is not null && ex.Error is not null){
+			await rsp.WriteAsync("Error...");
+		}
+	}
 
 /// <summary>Extension for route handler to add swagger info for dev environment</summary>
 /// <param name="rtx">Route handler</param>

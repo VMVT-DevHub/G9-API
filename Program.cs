@@ -41,12 +41,17 @@ app.MapGet("/api/login/evartai",Auth.Evartai).Swagger(
 
 
 app.MapGet("/api/deklar/{gvts}/{metai}",Deklaravimas.Get).Swagger(	
-	"","Gaunamas objektas"
+	"","Gaunamas deklaruojamų metų objektas"
 ).Response<G9.Models.Deklaravimas>(200,401,403,404).AddEndpointFilter(Require.Role);
 
 app.MapPost("/api/deklar/{gvts}/{metai}",Deklaravimas.Set).Swagger(	
- 	"","Tuščias atsakymas"
+ 	"","Daklaracijos duomenų įvedimas"
 ).Response<G9.Models.Deklaravimas>(200,422,401,403,404).AddEndpointFilter(Require.Role);
+
+app.MapPost("/api/deklar/{deklaracija}",Deklaravimas.Submit).Swagger(	
+ 	"","Deklaruoti metus"
+).Response<G9.Models.Deklaravimas>(200,422,401,403,404).AddEndpointFilter(Require.Role);
+
 
 
 app.MapGet("/api/veiklos",Veiklos.Get).Swagger(	
@@ -66,15 +71,13 @@ app.MapGet("/api/reiksmes/{deklaracija}",Reiksmes.Get).Swagger(
 	"","Gauti deklaruojamų rodiklių reikšmes"
 ).Response<G9.Models.ArrayModel<G9.Models.RodiklioReiksme>>(200,401,403,404).AddEndpointFilter(Require.Role);
 
-// app.MapPost("/api/reiksmes/{gvts}/{metai}",Rodikliai.Set).Swagger(	
-// 	"Išsaugiti rodiklius veiklai",
-// 	"Siunčiamas objektas"
-// ).Response<G9.Models.Rodikliai>(200);
+app.MapPost("/api/reiksmes/{deklaracija}",Reiksmes.Set).Swagger(	
+ 	"", "Įrašomos rodiklių reikšmės"
+).Produces(204).Errors(422,401,403,404).AddEndpointFilter(Require.Role);
 
-// app.MapDelete("/api/reiksmes/{gvts}/{metai}",Rodikliai.Del).Swagger(	
-// 	"Pašalinti rodiklį",
-// 	""
-// ).Produces(204);
+app.MapDelete("/api/reiksmes/{deklaracija}",Reiksmes.Del).Swagger(	
+ 	"", "Pašalinti rodiklių reikšmes deklaracijoje"
+).Produces(204).Errors(422,401,403,404).AddEndpointFilter(Require.Role);
 
 
 app.Run();
