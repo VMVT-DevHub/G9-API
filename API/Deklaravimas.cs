@@ -170,8 +170,8 @@ public static class Reiksmes{
 }
 
 
-/// <summary>Deklaravimo API</summary>
-public static class Deklaravimas {
+/// <summary>Deklaracijų API</summary>
+public static class Deklaracija {
 	/// <summary>Gauti informaciją apie deklaruojamus metus</summary>
 	/// <param name="ctx"></param><param name="ct"></param>
 	/// <param name="gvts">Geriamo vandens tiekimo sistema</param>
@@ -217,8 +217,10 @@ public static class Deklaravimas {
 			}
 		} else Error.E403(ctx,true);
 	}
+}
 
-
+/// <summary>Deklaravimo API</summary>
+public static class Deklaravimas {
 	/// <summary>Deklaracijos validacija</summary>
 	/// <param name="ctx"></param>
 	/// <param name="deklaracija">Deklaracijos ID</param>
@@ -230,23 +232,33 @@ public static class Deklaravimas {
 	}
 
 	/// <summary>Deklaracijos pateikimas</summary>
-	/// <param name="ctx"></param>
+	/// <param name="ctx"></param><param name="ct"></param><returns></returns>
 	/// <param name="deklaracija">Deklaracijos ID</param>
-	/// <param name="ct"></param><returns></returns>
-	public static async Task Submit(HttpContext ctx, long deklaracija, [FromBody] string data, CancellationToken ct){
+	/// <param name="data">Neatitikimų patvirtinimo duomenys</param>
+	public static async Task Submit(HttpContext ctx, long deklaracija, [FromBody] DeklaravimasSet data, CancellationToken ct){
 		if(await Validate(ctx,deklaracija,ct)){
-
+			if(data is not null) {
+				await Save(ctx, data, ct);
+			}
 		}
 	}
 	
 	/// <summary>Deklaracijos neatitikimų pildymas</summary>
-	/// <param name="ctx"></param>
+	/// <param name="ctx"></param><param name="ct"></param><returns></returns>
 	/// <param name="deklaracija">Deklaracijos ID</param>
-	/// <param name="ct"></param><returns></returns>
-	public static async Task Update(HttpContext ctx, long deklaracija, [FromBody] string data, CancellationToken ct){
+	/// <param name="data">Neatitikimų patvirtinimo duomenys</param>
+	public static async Task Update(HttpContext ctx, long deklaracija, [FromBody] DeklaravimasSet data, CancellationToken ct){
 		if(await Validate(ctx,deklaracija,ct)){
-			
+				await Save(ctx, data, ct);
 		}
+	}
+
+	private static async Task<bool> Save(HttpContext ctx, DeklaravimasSet data, CancellationToken ct){
+		if(data.Trukumas?.Count>0){}
+		if(data.Kartojasi?.Count>0){}
+		if(data.Virsijimas?.Count>0){}
+		await ctx.Response.WriteAsync("",ct);
+		return true;
 	}
 
 	private static async Task<bool> Validate(HttpContext ctx, long deklaracija, CancellationToken ct){

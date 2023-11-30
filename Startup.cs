@@ -85,4 +85,11 @@ public static class Startup {
 	/// <param name="main">Pagrindinis atsakymo statusas</param>
 	/// <param name="err">Klaidos kodai</param><returns></returns>
 	public static RouteHandlerBuilder Response<T>(this RouteHandlerBuilder builder, int main=200, params int[] err) => builder.Produces<T>(main).Errors(err);
+
+	/// <summary>Reikalauti vartotojo rolės</summary>
+	/// <param name="builder"></param><returns></returns>
+	public static RouteHandlerBuilder RequireRole(this RouteHandlerBuilder builder) => builder.AddEndpointFilter(Require.Role);
+	/// <summary>Reikalauti vartotojo prisijungimo</summary>
+	/// <param name="builder"></param><returns></returns>
+	public static RouteHandlerBuilder RequireLogin(this RouteHandlerBuilder builder) => builder.AddEndpointFilter(Require.Login);
 }
