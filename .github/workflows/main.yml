@@ -1,5 +1,4 @@
 name: Test release
-
 on:
   workflow_dispatch
   #push:
