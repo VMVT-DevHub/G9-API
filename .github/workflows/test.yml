@@ -30,3 +30,4 @@ jobs:
           echo "Response: $response"
         env:
           API_URL: ${{ secrets.G9_TRIGGER }}
+
