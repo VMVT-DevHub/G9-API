@@ -30,7 +30,15 @@ jobs:
     needs: build
     
     steps:
-    - name: Trigger deployment
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Download Artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: publish-test
+        
+    - name: Finish Deployment
       run: |
         api_url=$API_URL
         response=$(curl -s $api_url)
