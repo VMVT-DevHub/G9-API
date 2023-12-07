@@ -358,6 +358,12 @@ public class Vartotojas {
 	/// <summary>Telefonas</summary>
 	/// <example>+37060000001</example>
 	public string? Phone { get; set; }
+	/// <summary>Sesijos pratęsimo laikas</summary>
+	/// <example>2024-01-02T12:20:00Z</example>
+	public DateTime SessionExtend { get; set; }
+	/// <summary>Sessijos galiojimo pabaiga</summary>
+	/// <example>2024-01-02T12:30:00Z</example>
+	public DateTime SessionExpire { get; set; }
 	/// <summary>Juridinio asmens duomenys</summary>
 	public JA? JA { get; set; }
 	/// <summary>Vartotojo GVTS rolės</summary>
