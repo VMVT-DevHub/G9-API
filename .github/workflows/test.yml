@@ -1,0 +1,32 @@
+name: Test release
+on:
+  push:
+    branches:
+      - main
+  #workflow_dispatch
+jobs:
+  build:
+    name: Build RHEL
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup .NET Core SDK '7.0.x'
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '7.0.x'
+      - name: Build
+        run: dotnet publish -c Debug -r rhel.9-x64 -p:PublishSingleFile=true --self-contained false
+        
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+           name: publish-test
+           path: ./bin/Debug/net7.0/rhel.9-x64/publish/
+      - name: Trigger deployment
+        run: |
+          api_url=$API_URL
+          response=$(curl -s $api_url)
+          echo "Response: $response"
+        env:
+          API_URL: ${{ secrets.G9_TRIGGER }}
