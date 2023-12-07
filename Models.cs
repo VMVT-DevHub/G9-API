@@ -83,6 +83,25 @@ public class ArrayModelA<T> : ArrayModel<T> {
 	public Dictionary<string,Dictionary<string,string>>? Lookup { get; set; }
 }
 
+/// <summary>Json masyvo modelis su Kalidos reikšmėmis</summary>
+/// <typeparam name="T"></typeparam>
+public class ArrayModelB<T> : ArrayModel<T> {
+	/// <summary>Duomenų suvedimo klaidos</summary>
+	public List<Klaida>? Errors { get; set; }
+}
+
+/// <summary>Deklaravimo klaida</summary>
+public class Klaida {
+	/// <summary>Duomenų skaitinės reikšmės</summary>
+	public long ID { get; set; }
+	/// <summary>Klaidos aprašymas</summary>
+	public string? Message { get; set; }
+	/// <summary>Klaidos konstruktorius</summary>
+	public Klaida(){}
+	/// <summary>Klaidos konstruktorius</summary>
+	public Klaida(long id, string msg){ ID=id; Message=msg; }
+}
+
 /// <summary>Json masyvo modelis</summary>
 /// <typeparam name="T"></typeparam>
 public class ArrayModel<T> {
@@ -188,11 +207,21 @@ public class Deklaravimas {
 	/// <summary>Klaidos indikatorius</summary>
 	public bool Klaidos { get; set; }
 	/// <summary>Rodiklių suvedimo trūkumai</summary>
-	public ArrayModel<ValidTrukumas>? Trukumas { get; set; }
+	public ArrayModelB<ValidTrukumas>? Trukumas { get; set; }
 	/// <summary>Besikartojantys rodiklių duomenys</summary>
-	public ArrayModel<ValidKartojasi>? Kartojasi { get; set; }
+	public ArrayModelB<ValidKartojasi>? Kartojasi { get; set; }
 	/// <summary>Rodiklių viršijimas</summary>
-	public ArrayModel<ValidVirsijimas>? Virsijimas { get; set; }
+	public ArrayModelB<ValidVirsijimas>? Virsijimas { get; set; }
+}
+
+/// <summary>Deklaravimo neatitikimų tipai</summary>
+public enum DeklarTipas {
+	/// <summary>Trukstami suvedimai</summary>
+	Trukumas, 
+	/// <summary>Besikartojantys įvedimai</summary>
+	Kartojasi, 
+	/// <summary>Viršijamų rodiklių</summary>
+	Virsijimas
 }
 
 

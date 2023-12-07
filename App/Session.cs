@@ -123,10 +123,11 @@ public class UserSession {
 	public UserSession(){}
 	/// <summary>Vartotojo sesijos konstruktorius</summary>
 	/// <param name="usr">Vartotojo informacija</param>
-	public UserSession(User usr){ User = usr; }
+	public UserSession(User usr){ User = usr;  User.SessionExpire=Expire; User.SessionExtend=Extend; }
 	/// <summary>Atnaujinti sesiją</summary>
 	/// <param name="ssid">Sena sesija</param>
 	public UserSession(UserSession ssid) {
-		User = ssid.User; Extended=ssid.Extended+1;
+		if (ssid.User is not null){ User = ssid.User; User.SessionExpire=Expire; User.SessionExtend=Extend; }
+		Extended=ssid.Extended+1;
 	}
 }

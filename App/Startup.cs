@@ -1,5 +1,4 @@
-
-using System.Data.Common;
+using System.Text.Json;
 using App.Auth;
 using Microsoft.AspNetCore.Diagnostics;
 
@@ -23,10 +22,19 @@ public static class Startup {
 				c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo{Title="SwaggerAnnotation", Version="v1"});
 				c.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory,"G9.xml"));
 			});
-			builder.Services.AddMvc().AddJsonOptions(opt => { opt.JsonSerializerOptions.PropertyNamingPolicy = null; opt.JsonSerializerOptions.WriteIndented=false; });
+			builder.Services.AddMvc().AddJsonOptions(opt => { 
+				opt.JsonSerializerOptions.PropertyNamingPolicy = null; opt.JsonSerializerOptions.WriteIndented=false; 
+				opt.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+				});
 		#endif
 		
-		builder.Services.ConfigureHttpJsonOptions( a => { a.SerializerOptions.PropertyNamingPolicy=null; a.SerializerOptions.WriteIndented=false; });
+		builder.Services.ConfigureHttpJsonOptions( a => { 
+			a.SerializerOptions.PropertyNamingPolicy=null; 
+			a.SerializerOptions.WriteIndented=false;
+			a.SerializerOptions.Converters.Add(new CustomDateTimeConverter());
+			a.SerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+		});
+		
 
 		var app = builder.Build();
 
@@ -49,11 +57,19 @@ public static class Startup {
 		}
 	}
 
-/// <summary>Extension for route handler to add swagger info for dev environment</summary>
-/// <param name="rtx">Route handler</param>
-/// <param name="summary">API Summary</param>
-/// <param name="desc">API Description</param>
-/// <returns>Route handler</returns>
+	/// <summary>Datos formatavimas</summary>
+	public class CustomDateTimeConverter : System.Text.Json.Serialization.JsonConverter<DateTime>{
+		/// <summary></summary><param name="reader"></param><param name="typeToConvert"></param><param name="options"></param><returns></returns>
+		public override DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => DateTime.TryParse(reader.GetString(),out var dt)?dt:default;
+		/// <summary></summary><param name="writer"></param><param name="value"></param><param name="options"></param>
+		public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options) => writer.WriteStringValue(value.ToString("yyyy-MM-ddTHH:mm:ssZ"));
+	}
+
+	/// <summary>Extension for route handler to add swagger info for dev environment</summary>
+	/// <param name="rtx">Route handler</param>
+	/// <param name="summary">API Summary</param>
+	/// <param name="desc">API Description</param>
+	/// <returns>Route handler</returns>
 	public static RouteHandlerBuilder Swagger (this RouteHandlerBuilder rtx, string summary, string? desc = null){
 		#if DEBUG //Disable swagger
 			rtx.WithOpenApi(o => new(o){ Summary = summary, Description = desc });

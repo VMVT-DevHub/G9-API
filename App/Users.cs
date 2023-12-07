@@ -21,6 +21,10 @@ public class User {
 	public string? Email { get; set; }
 	/// <summary>Telefono numeris</summary>
 	public string? Phone { get; set; }
+	/// <summary>Sesijos pratęsimo laikas</summary>
+	public DateTime SessionExtend { get; set; }
+	/// <summary>Sesijos pabaigos laikas</summary>
+	public DateTime SessionExpire { get; set; }
 	/// <summary>Juridinio asmens kodas</summary>
 	public G9.Models.JA? JA { get; set; }
 	/// <summary>Prisijungusio vartotojo tipas</summary>

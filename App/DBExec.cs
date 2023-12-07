@@ -20,18 +20,26 @@ public class DBExec : IDisposable {
 	public string SQL { get; set; }
 	/// <summary>Užklausos parametrai</summary>
 	public DBParams Params { get; set; }
+	/// <summary>Naudoti tranzakciją</summary>
+	public bool UseTransaction { get; set; }
+	/// <summary>Prisijungimo tranzakcija</summary>
+	public NpgsqlTransaction? Transaction { get; private set; }
 
 	private NpgsqlConnection? Conn { get; set; }
 	private NpgsqlCommand? Cmd { get; set; }
 
+
 	private NpgsqlCommand Command(string sql){
 		Conn ??= new NpgsqlConnection(DBProps.ConnString); Conn.Open();
-		Cmd ??= new NpgsqlCommand(sql,Conn); Params?.Load(Cmd);
+		if(UseTransaction) Transaction??=Conn.BeginTransaction();
+		Cmd ??= new NpgsqlCommand(sql,Conn,Transaction); Params?.Load(Cmd);
 		return Cmd;
 	}
+
 	private async Task<NpgsqlCommand> CommandAsync(string sql, CancellationToken ct){
 		Conn ??= new NpgsqlConnection(DBProps.ConnString); await Conn.OpenAsync(ct);
-		Cmd ??= new NpgsqlCommand(sql,Conn); Params?.Load(Cmd);
+		if(UseTransaction) Transaction??=await Conn.BeginTransactionAsync();
+		Cmd ??= new NpgsqlCommand(sql,Conn,Transaction); Params?.Load(Cmd);
 		return Cmd;
 	}
 
@@ -65,29 +73,52 @@ public class DBExec : IDisposable {
 
 	/// <summary>Vykdyti SQL užklausą</summary>
 	/// <returns>Įrašų skaičius</returns>
-	public int Execute() { var ret = Command(SQL).ExecuteNonQuery(); Dispose(); return ret; }
+	public int Execute() { var ret = Command(SQL).ExecuteNonQuery(); if(!UseTransaction) Dispose(); return ret; }
 
 	/// <summary>Vykdyti SQL užklausą</summary>
 	/// <returns>Įrašų skaičius</returns>
-	public async Task<int> Execute(CancellationToken ct) { var ret = await(await CommandAsync(SQL,ct)).ExecuteNonQueryAsync(ct); Dispose(); return ret;}
+	public async Task<int> Execute(CancellationToken ct) { var ret = await(await CommandAsync(SQL,ct)).ExecuteNonQueryAsync(ct); if(!UseTransaction) Dispose(); return ret;}
 	
 	
 	/// <summary>Vykdyti SQL užklausą</summary>
 	/// <returns>Įrašų skaičius</returns>
-	public object? ExecuteScalar() { var ret = Command(SQL).ExecuteScalar(); Dispose(); return ret;}
+	public object? ExecuteScalar() { var ret = Command(SQL).ExecuteScalar(); if(!UseTransaction) Dispose(); return ret;}
 
 	/// <summary>Vykdyti SQL užklausą grąžinant reikšmę</summary>
 	/// <returns>Įrašų skaičius</returns>
-	public T? ExecuteScalar<T>() { var ret = Command(SQL).ExecuteScalar(); Dispose(); return ret is T t ? t: default;}
+	public T? ExecuteScalar<T>() { var ret = Command(SQL).ExecuteScalar(); if(!UseTransaction) Dispose(); return ret is T t ? t: default;}
 
 
 	/// <summary>Vykdyti SQL užklausą</summary>
 	/// <returns>Įrašų skaičius</returns>
-	public async Task<object?> ExecuteScalar(CancellationToken ct) { var ret = await(await CommandAsync(SQL,ct)).ExecuteScalarAsync(ct); Dispose(); return ret; }
+	public async Task<object?> ExecuteScalar(CancellationToken ct) { var ret = await(await CommandAsync(SQL,ct)).ExecuteScalarAsync(ct); if(!UseTransaction) Dispose(); return ret; }
 
 	/// <summary>Vykdyti SQL užklausą</summary>
 	/// <returns>Įrašų skaičius</returns>
-	public async Task<T?> ExecuteScalar<T>(CancellationToken ct) { var ret = await(await CommandAsync(SQL,ct)).ExecuteScalarAsync(ct); Dispose(); return ret is T t ? t: default; }
+	public async Task<T?> ExecuteScalar<T>(CancellationToken ct) { var ret = await(await CommandAsync(SQL,ct)).ExecuteScalarAsync(ct); if(!UseTransaction) Dispose(); return ret is T t ? t: default; }
+
+
+
+	/// <summary>Naujos užklausos sukūrimas</summary>
+	/// <param name="sql">Užklausa</param>
+	public DBExec Set(string sql) {	SQL = sql; Params=new(); return this; }
+
+	/// <summary>Naujos užklausos sukūrimas</summary>
+	/// <param name="sql">Užklausa</param>
+	/// <param name="param">Parametras</param>
+	/// <param name="value">Reikšmė</param>
+	public DBExec Set(string sql, string param, object? value){ SQL=sql; Params = new(); Params.Add(param,value); return this; }
+
+	/// <summary>Naujos užklausos sukūrimas</summary>
+	/// <param name="sql">Užklausa</param>
+	/// <param name="param">Parametrai</param>
+	public DBExec Set(string sql, params ValueTuple<string, object?>[] param){ SQL=sql; Params = new(param); return this; }
+
+	/// <summary>Naujos užklausos sukūrimas</summary>
+	/// <param name="sql">Užklausa</param>
+	/// <param name="param">Parametrai</param>
+	public DBExec Set(string sql, DBParams param){ SQL=sql; Params=param; return this; }
+
 
 
 	/// <summary>Gauti įrašus kaip masyvą</summary>
@@ -124,6 +155,7 @@ public class DBExec : IDisposable {
 			if (disposing) {
 				Cmd?.Dispose(); Cmd=null;
 				Conn?.Dispose(); Conn=null;
+				Transaction?.Dispose(); Transaction=null;
 				//Dispose stuff;
 			}
 			IsDisposed = true;
@@ -131,6 +163,7 @@ public class DBExec : IDisposable {
 	}
 
 }
+
 
 /// <summary>PostgreSQL funkcijų išplėtimai</summary>
 public static class DBExtensions {
@@ -170,9 +203,10 @@ public static class DBExtensions {
 	/// <param name="wrt">Json writer</param>
 	/// <param name="ct"></param>
 	/// <param name="lookup">Lookup objektas</param>
+	/// <param name="error">Kaidų sąrašas</param>
 	/// <param name="flush">atiduodamas įrašų kiekis</param>
 	/// <returns></returns>
-	public static async Task PrintArray(string query, DBParams? dbparams,Utf8JsonWriter wrt, CancellationToken ct,CachedLookup? lookup=null,int flush=20){
+	public static async Task PrintArray(string query, DBParams? dbparams,Utf8JsonWriter wrt, CancellationToken ct,CachedLookup? lookup=null, object? error=null,int flush=20){
 		using var rdr = await new DBExec(query, dbparams??new()).GetReader(ct);
 		wrt.WriteStartObject();
 		wrt.WritePropertyName("Fields");
@@ -186,9 +220,11 @@ public static class DBExtensions {
 		wrt.WriteEndArray();
 		if(lookup is not null){
 			wrt.WritePropertyName("Lookup");
-			wrt.WriteStartArray();
 			wrt.WriteRawValue(lookup.Json);
-			wrt.WriteEndArray();
+		}
+		if(error is not null){
+			wrt.WritePropertyName("Error");
+			wrt.WriteRawValue(JsonSerializer.Serialize(error));
 		}
 		wrt.WriteEndObject();
 	}

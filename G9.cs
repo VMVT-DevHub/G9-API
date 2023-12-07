@@ -20,7 +20,11 @@ app.MapPost("/api/deklar/{gvts}/{metai}",Deklaracija.Set).Swagger("","Daklaracij
 // Deklaravimas
 app.MapGet("/api/deklaruoti/{deklaracija}",Deklaravimas.Valid).Swagger("","Tikrinti ar galima delkaruoti").Response<G9.Models.Deklaravimas>(200,422,401,403,404).RequireRole();
 app.MapPost("/api/deklaruoti/{deklaracija}",Deklaravimas.Submit).Swagger("","Pateikti deklaraciją").Response<G9.Models.Deklaravimas>(200,422,401,403,404).RequireRole();
-app.MapPut("/api/deklaruoti/{deklaracija}",Deklaravimas.Update).Swagger("","Atnaujinti delkaracijos neatitikimus").Response<G9.Models.Deklaravimas>(200,422,401,403,404).RequireRole();
+
+app.MapGet("/api/deklaruoti/{deklaracija}/{tipas}",Deklaravimas.GetOne).Swagger("","Gauti delkaracijos neatitikimus pagal tipą").Response<G9.Models.Deklaravimas>(200,422,401,403,404).RequireRole();
+app.MapPost("/api/deklaruoti/{deklaracija}/{tipas}",Deklaravimas.UpdateOne).Swagger("","Atnaujinti delkaracijos neatitikimus").Response<G9.Models.Deklaravimas>(200,422,401,403,404).RequireRole();
+
+
 
 // Veiklos
 app.MapGet("/api/veiklos",Veiklos.Get).Swagger("","Gaunamos prisijungusio vartotojo veiklos ir deklaruojami metai").Response<G9.Models.Veiklos>(200,401,403).RequireRole();
