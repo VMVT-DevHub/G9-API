@@ -6,7 +6,10 @@ using Microsoft.AspNetCore.Mvc;
 namespace App.API;
 
 /// <summary>Deklaravimo API</summary>
-public static class Deklaravimas {
+public static class Deklaravimas {	
+	/// <summary>Deklaravimo viršijimo statinės reikšmės</summary>
+	public static CachedLookup DeklarVirsijimasVal { get; } = new CachedLookup("Virsijimas", ("Tipas","lkp_vietos_tipas"),("Statusas","lkp_stebejimo_statusas"));
+
 	/// <summary>Deklaracijos validacija</summary>
 	/// <param name="ctx"></param>
 	/// <param name="deklaracija">Deklaracijos ID</param>
@@ -32,7 +35,7 @@ public static class Deklaravimas {
 		}
 		if(tipas is null || tipas == DeklarTipas.Virsijimas){
 			writer.WritePropertyName("Virsijimas");
-			await DBExtensions.PrintArray("SELECT * FROM public.valid_virsija_set(@deklar,@usr);", prms, writer, ct, null, error?.Virsijimas);
+			await DBExtensions.PrintArray("SELECT * FROM public.valid_virsija_set(@deklar,@usr);", prms, writer, ct, DeklarVirsijimasVal, error?.Virsijimas);
 		}
 		writer.WriteEndObject();
 		await writer.FlushAsync(ct);

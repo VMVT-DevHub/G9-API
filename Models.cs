@@ -279,13 +279,13 @@ public class ValidVirsijimas {
 	/// <summary>Viršijimo paveiktų žmonių skaičius</summary>
 	public int? Zmones { get; set; }
 	/// <summary>Mėginių ėmimo vietos tipas</summary>
-	public string? Tipas { get; set; }
+	public int? Tipas { get; set; }
 	/// <summary>Kiekybinio nustatymo ribos LOQ reikšmė	</summary>
-	public string? LOQReiksme { get; set; }
+	public double? LOQReiksme { get; set; }
 	/// <summary>Nustatyta vertė žemiau nei LOQ</summary>
-	public string? LOQVerte { get; set; }
+	public double? LOQVerte { get; set; }
 	/// <summary>Stebėjimo statusas</summary>
-	public string? Statusas { get; set; }
+	public int? Statusas { get; set; }
 	/// <summary>Neatitikimas patvirtintas</summary>
 	public bool Patvirtinta { get; set; }
 	/// <summary>Pastabos</summary>
