@@ -67,9 +67,9 @@ GRANT USAGE ON SCHEMA public TO g9_app; GRANT USAGE ON SCHEMA jar TO g9_app;
 	
 	CREATE OR REPLACE FUNCTION public.valid_trukumas(deklar integer) 
 	RETURNS TABLE(rodiklis integer, suvesta integer, reikia integer) AS $$ DECLARE stb integer; kiekis integer; BEGIN
-	SELECT COALESCE(dkl_kiekis,1),dkl_stebesena into stb, kiekis FROM deklaravimas WHERE dkl_id=deklar;
+	SELECT COALESCE(dkl_kiekis,1),dkl_stebesena into kiekis,stb FROM deklaravimas WHERE dkl_id=deklar;
 	RETURN QUERY WITH steb as (SELECT stb_rodiklis FROM stebesenos WHERE stb_stebesenos=stb),
-	   dzn as (SELECT dzn_grupe,(max(dzn_kartai)*COALESCE(max(l.val),1)) as dzn_kartai FROM daznumas d LEFT JOIN lkp_daznumo_daugiklis l ON d.dzn_laikas = l.key WHERE dzn_nuo <=kiekis AND dzn_iki>=kiekis and dzn_kartai>0 group by dzn_grupe),
+	   dzn as (SELECT dzn_grupe,(max(dzn_kartai)*COALESCE(max(l.val),1)) as dzn_kartai FROM daznumas d LEFT JOIN lkp_daznumo_daugiklis l ON d.dzn_laikas = l.key WHERE dzn_stebesena=stb and dzn_nuo <=kiekis AND dzn_iki>=kiekis and dzn_kartai>0 group by dzn_grupe),
 	   rod as (SELECT rod_id,dzn_kartai FROM rodikliai INNER JOIN dzn ON (rod_daznumas=dzn_grupe)),
 	   rks as (SELECT rks_rodiklis, count(*) as rks_count FROM reiksmes WHERE rks_deklar=deklar group by rks_rodiklis),
 	   grp as (SELECT rod_id,dzn_kartai FROM steb INNER JOIN rod on (rod_id=stb_rodiklis))
@@ -87,7 +87,7 @@ GRANT USAGE ON SCHEMA public TO g9_app; GRANT USAGE ON SCHEMA jar TO g9_app;
 	   INSERT INTO public.valid_trukumas (vld_rodiklis,vld_suvesta, vld_reikia,vld_deklar,vld_user) SELECT rodiklis, suvesta, reikia, deklar, userid FROM curr WHERE rodiklis NOT IN (SELECT vld_rodiklis FROM public.valid_trukumas WHERE vld_deklar=deklar);   
 	   RETURN QUERY SELECT * FROM public.valid_trukumas_get(deklar);
 	END $$; GRANT EXECUTE ON FUNCTION public.valid_trukumas(integer) TO g9_app; GRANT EXECUTE ON FUNCTION public.valid_trukumas_get(integer) TO g9_app; GRANT EXECUTE ON FUNCTION public.valid_trukumas_set(integer,uuid) TO g9_app;
-	
+
 	CREATE OR REPLACE FUNCTION public.valid_virsija(in deklar integer, out rodiklis integer, out nuo date, out iki date, out max double precision) RETURNS SETOF RECORD AS $$ DECLARE rec RECORD; BEGIN max:=0;
 	   FOR rec IN (WITH 
 	      riba as (SELECT rks_rodiklis rod, rks_date dte FROM reiksmes LEFT JOIN rodikliai on (rks_rodiklis=rod_id) WHERE rks_deklar=deklar and (rks_reiksme>rod_max or rks_reiksme<rod_min) GROUP BY rks_rodiklis,rks_date),

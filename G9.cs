@@ -14,8 +14,11 @@ app.MapPost("/api/deleg/{gvts}",Delegavimas.Set).Swagger("","Pridėti deleguojam
 app.MapDelete("/api/deleg/{gvts}/{user}",Delegavimas.Del).Swagger("","Trinti deleguojamą asmenį").Produces(204).Errors(422,401,403,404).RequireRole();
 
 // Deklaracijos
-app.MapGet("/api/deklar/{gvts}/{metai}",Deklaracija.Get).Swagger("","Gaunamas deklaruojamų metų objektas").Response<G9.Models.Deklaracija>(200,401,403,404).RequireRole();
-app.MapPost("/api/deklar/{gvts}/{metai}",Deklaracija.Set).Swagger("","Daklaracijos duomenų įvedimas").Response<G9.Models.Deklaracija>(200,422,401,403,404).RequireRole();
+app.MapGet("/api/deklaracijos/{gvts}",Deklaracija.GetAll).Swagger("","Gaunamos visos VGTS deklaracijos").Response<G9.Models.DeklaracijaGet>(200,401,403,404).RequireRole();
+app.MapGet("/api/deklaracijos/{gvts}/{metai}",Deklaracija.GetYear).Swagger("","Gaunamos VGTS deklaracijos metams").Response<G9.Models.DeklaracijaGet>(200,401,403,404).RequireRole();
+
+app.MapGet("/api/deklaracija/{deklaracija}",Deklaracija.GetOne).Swagger("","Deklaracijos duomenys").Response<G9.Models.DeklaracijaGet>(200,401,403,404).RequireRole();
+app.MapPost("/api/deklaracija/{deklaracija}",Deklaracija.Set).Swagger("","Daklaracijos duomenų įvedimas").Response<G9.Models.DeklaracijaGet>(200,422,401,403,404).RequireRole();
 
 // Deklaravimas
 app.MapGet("/api/deklaruoti/{deklaracija}",Deklaravimas.Valid).Swagger("","Tikrinti ar galima delkaruoti").Response<G9.Models.Deklaravimas>(200,422,401,403,404).RequireRole();

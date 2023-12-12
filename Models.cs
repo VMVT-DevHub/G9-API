@@ -65,6 +65,9 @@ public class Deklaracija	{
 	public string? RedagUser { get; set; }
 }
 
+/// <summary>Deklaruojamų metų masyvo modelis</summary>
+public class DeklaracijaGet : ArrayModelA<Deklaracija> {}
+
 
 /// <summary>Deklaravimo informacija</summary>
 public class DeklaracijaSet {
@@ -72,6 +75,8 @@ public class DeklaracijaSet {
 	public double? Kiekis { get; set; }
 	/// <summary>Aptarnaujamų vartotojų skaičius</summary>
 	public int? Vartotojai { get; set; }
+	/// <summary>Vandens ruošimui naudojamos medžiagos</summary>
+	public List<int>?  RuosimoMedziagos { get; set; }
 }
 
 

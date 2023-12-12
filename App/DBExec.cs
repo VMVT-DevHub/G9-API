@@ -326,6 +326,9 @@ public static class DBExtensions {
 		else if(tp==typeof(long)) return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNull(nm); else wrt.WriteNumber(nm,rdr.GetInt64(i));};
 		else if(tp==typeof(string)) return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNull(nm); else wrt.WriteString(nm,rdr.GetString(i));};
 		else if(tp==typeof(TimeSpan)) return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNull(nm); else wrt.WriteNumber(nm,rdr.GetTimeSpan(i).Ticks);};
+		else if(tp==typeof(Array)) return (i)=> { if(rdr.IsDBNull(i)) wrt.WriteNull(nm); else { 
+			wrt.WritePropertyName(nm); wrt.WriteRawValue(JsonSerializer.Serialize(rdr.GetValue(i)));
+		}};
 		else return (i)=>{};
 	} 
 
@@ -353,6 +356,7 @@ public static class DBExtensions {
 		else if(tp==typeof(long)) return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNullValue(); else wrt.WriteNumberValue(rdr.GetInt64(i));};
 		else if(tp==typeof(string)) return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNullValue(); else wrt.WriteStringValue(rdr.GetString(i));};
 		else if(tp==typeof(TimeSpan)) return (i)=>{if(rdr.IsDBNull(i)) wrt.WriteNullValue(); else wrt.WriteNumberValue(rdr.GetTimeSpan(i).Ticks);};
+		else if(tp==typeof(Array)) return (i)=> { if(rdr.IsDBNull(i)) wrt.WriteNullValue(); else wrt.WriteRawValue(JsonSerializer.Serialize(rdr.GetValue(i)));};
 		else return (i)=>{};
 	} 
 }
