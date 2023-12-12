@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.AspNetCore.Mvc.TagHelpers;
 using Npgsql;
 
 
@@ -36,8 +37,9 @@ public class DBExec : IDisposable {
 	}
 
 	private async Task<NpgsqlCommand> CommandAsync(string sql, CancellationToken ct){
-		Conn ??= new NpgsqlConnection(DBProps.ConnString); await Conn.OpenAsync(ct);
-		if(UseTransaction) Transaction??=await Conn.BeginTransactionAsync();
+		Conn ??= new NpgsqlConnection(DBProps.ConnString);
+		if(Conn.State != System.Data.ConnectionState.Open) await Conn.OpenAsync(ct);
+		if(UseTransaction) Transaction??=await Conn.BeginTransactionAsync(ct);
 		Cmd ??= new NpgsqlCommand(sql,Conn,Transaction); Params?.Load(Cmd);
 		return Cmd;
 	}
@@ -205,7 +207,7 @@ public static class DBExtensions {
 	/// <param name="error">Kaidų sąrašas</param>
 	/// <param name="flush">atiduodamas įrašų kiekis</param>
 	/// <returns></returns>
-	public static async Task PrintArray(string query, DBParams? dbparams,Utf8JsonWriter wrt, CancellationToken ct,CachedLookup? lookup=null, object? error=null,int flush=20){
+	public static async Task<int> PrintArray(string query, DBParams? dbparams,Utf8JsonWriter wrt, CancellationToken ct,CachedLookup? lookup=null, object? error=null,int flush=20){
 		using var rdr = await new DBExec(query, dbparams??new()).GetReader(ct);
 		wrt.WriteStartObject();
 		wrt.WritePropertyName("Fields");
@@ -215,7 +217,7 @@ public static class DBExtensions {
 		wrt.WriteEndArray();
 		wrt.WritePropertyName("Data");		
 		wrt.WriteStartArray();
-		await Loop(rdr,wrt,ct,flush);
+		var ret = await Loop(rdr,wrt,ct,flush);
 		wrt.WriteEndArray();
 		if(lookup is not null){
 			wrt.WritePropertyName("Lookup");
@@ -226,6 +228,8 @@ public static class DBExtensions {
 			wrt.WriteRawValue(JsonSerializer.Serialize(error));
 		}
 		wrt.WriteEndObject();
+
+		return ret;
 	}
 
 	/// <summary>Atiduoti užklausą sąrašą kaip masyvą</summary>
@@ -266,9 +270,10 @@ public static class DBExtensions {
 	/// <param name="rdr"></param><param name="wrt"></param><param name="ct"></param>
 	/// <param name="flush">atiduodamas įrašų kiekis</param>
 	/// <returns></returns>
-	public static async Task Loop(NpgsqlDataReader rdr, Utf8JsonWriter wrt, CancellationToken ct, int flush=20){
+	public static async Task<int> Loop(NpgsqlDataReader rdr, Utf8JsonWriter wrt, CancellationToken ct, int flush=20){
 		var act= new List<Action<int>>();
 		var fct = rdr.FieldCount;
+		int ret = 0;
 		for(var i =0; i<fct; i++) act.Add(GetAct(rdr,wrt,i));
 		var cnt=flush;
 		while (await rdr.ReadAsync(ct)) {
@@ -276,7 +281,9 @@ public static class DBExtensions {
 			for(var i=0; i<fct ;i++) act[i](i);
 			wrt.WriteEndArray();
 			if(cnt--<1){ wrt.Flush(); cnt=flush; }
+			ret++;
 		}
+		return ret;
 	}
 
 	/// <summary>Gauti lookup reikšmes</summary>

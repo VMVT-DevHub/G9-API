@@ -203,14 +203,22 @@ public class RodiklisSet {
 	public double Reiksme { get; set; }
 }
 
-
-
-/// <summary>Deklaravimo pateikimas ir neatitikimų tvirtinimas</summary>
+/// <summary>Deklaravimo rezultatas</summary>
 public class Deklaravimas {
-	/// <summary>Deklaracijos statusas</summary>
+	/// <summary>Deklaravimo statusas</summary>
 	public string? Statusas { get; set; }
-	/// <summary>Klaidos indikatorius</summary>
-	public bool Klaidos { get; set; }
+	/// <summary>Klaidų indikatorius</summary>
+	public bool Klaida { get; set; }
+	/// <summary>Nepatvirtinti trūkumo neatitiktys</summary>
+	public int Trukumas { get; set; }
+	/// <summary>Nepatvirtinti rodiklių pasikartojimai</summary>
+	public int Kartojasi { get; set; }
+	/// <summary>Nepatvirtinti viršijimo neatitiktys</summary>
+	public int Virsijimas { get; set; }
+}
+
+/// <summary>Deklaravimo pateikimas ir neatitikčių tvirtinimas</summary>
+public class Neatitiktys {
 	/// <summary>Rodiklių suvedimo trūkumai</summary>
 	public ArrayModelB<ValidTrukumas>? Trukumas { get; set; }
 	/// <summary>Besikartojantys rodiklių duomenys</summary>
@@ -219,8 +227,8 @@ public class Deklaravimas {
 	public ArrayModelB<ValidVirsijimas>? Virsijimas { get; set; }
 }
 
-/// <summary>Deklaravimo neatitikimų tipai</summary>
-public enum DeklarTipas {
+/// <summary>Deklaravimo neatitikciu tipai</summary>
+public enum NeatitikciuTipas {
 	/// <summary>Trukstami suvedimai</summary>
 	Trukumas, 
 	/// <summary>Besikartojantys įvedimai</summary>
@@ -299,7 +307,7 @@ public class ValidVirsijimas {
 
 
 /// <summary>Deklaravimo neatitikčių patvirtinimas</summary>
-public class DeklaravimasSet {	
+public class NeatitiktysSet {	
 	/// <summary>Rodiklių suvedimo trūkumai</summary>
 	public List<DeklarValidTrukumas>? Trukumas { get; set; }
 	/// <summary>Besikartojantys rodiklių duomenys</summary>
