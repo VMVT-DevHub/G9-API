@@ -285,10 +285,10 @@ public class ValidVirsijimas {
 	public int? Zmones { get; set; }
 	/// <summary>Mėginių ėmimo vietos tipas</summary>
 	public int? Tipas { get; set; }
+	/// <summary>Nustatyta vertė žemiau nei LOQ</summary>
+	public bool? LOQVerte { get; set; }
 	/// <summary>Kiekybinio nustatymo ribos LOQ reikšmė	</summary>
 	public double? LOQReiksme { get; set; }
-	/// <summary>Nustatyta vertė žemiau nei LOQ</summary>
-	public double? LOQVerte { get; set; }
 	/// <summary>Stebėjimo statusas</summary>
 	public int? Statusas { get; set; }
 	/// <summary>Neatitikimas patvirtintas</summary>
@@ -333,10 +333,10 @@ public class DeklarValidVirsijimas{
 	public int? Zmones { get; set; }
 	/// <summary>Mėginių ėmimo vietos tipas</summary>
 	public int? Tipas { get; set; }
+	/// <summary>Nustatyta vertė žemiau nei LOQ</summary>
+	public bool? LOQVerte { get; set; }
 	/// <summary>Kiekybinio nustatymo ribos LOQ reikšmė	</summary>
 	public double? LOQReiksme { get; set; }
-	/// <summary>Nustatyta vertė žemiau nei LOQ</summary>
-	public double? LOQVerte { get; set; }
 	/// <summary>Stebėjimo statusas</summary>
 	public int? Statusas { get; set; }
 	/// <summary></summary>
