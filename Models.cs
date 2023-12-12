@@ -301,9 +301,9 @@ public class ValidVirsijimas {
 /// <summary>Deklaravimo neatitikčių patvirtinimas</summary>
 public class DeklaravimasSet {	
 	/// <summary>Rodiklių suvedimo trūkumai</summary>
-	public List<DeklarValidTvirtinti>? Trukumas { get; set; }
+	public List<DeklarValidTrukumas>? Trukumas { get; set; }
 	/// <summary>Besikartojantys rodiklių duomenys</summary>
-	public List<DeklarValidTvirtinti>? Kartojasi { get; set; }
+	public List<DeklarValidKartojasi>? Kartojasi { get; set; }
 	/// <summary>Rodiklių viršijimas</summary>
 	public List<DeklarValidVirsijimas>? Virsijimas { get; set; }
 
@@ -311,9 +311,21 @@ public class DeklaravimasSet {
 
 
 /// <summary>Deklaruojamo rodiklio reikšmių kartojimosi patvirtinimas</summary>
-public class DeklarValidTvirtinti {
+public class DeklarValidKartojasi {
 	/// <summary>Validacijos identifikatorius</summary>
 	public int ID { get; set; }
+	/// <summary></summary>
+	public bool Patvirtinta { get; set; }
+	/// <summary></summary>
+	public string? Pastabos { get; set; }
+}
+
+/// <summary>Deklaruojamo rodiklio reikšmių kartojimosi patvirtinimas</summary>
+public class DeklarValidTrukumas {
+	/// <summary>Validacijos identifikatorius</summary>
+	public int ID { get; set; }
+	/// <summary>Taikomas kitas dažnumas</summary>
+	public bool KitasDaznumas { get; set; }
 	/// <summary></summary>
 	public bool Patvirtinta { get; set; }
 	/// <summary></summary>

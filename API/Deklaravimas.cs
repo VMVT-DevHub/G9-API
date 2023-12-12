@@ -77,7 +77,7 @@ public static class Deklaravimas {
 	}
 
 
-	private static readonly string SqlUpdateTrukumas = "UPDATE public.valid_trukumas SET vld_tvirtinti=@tvrt,vld_pastabos=@pstb,vld_user=@usr,vld_date_modif=timezone('utc', now()) WHERE vld_id=@id and vld_deklar=@deklar;";
+	private static readonly string SqlUpdateTrukumas = "UPDATE public.valid_trukumas SET vld_tvirtinti=@tvrt,vld_kitas=@kitas,vld_pastabos=@pstb,vld_user=@usr,vld_date_modif=timezone('utc', now()) WHERE vld_id=@id and vld_deklar=@deklar;";
 	private static readonly string SqlUpdateKartojasi = "UPDATE public.valid_kartojasi SET vld_tvirtinti=@tvrt,vld_pastabos=@pstb,vld_user=@usr,vld_date_modif=timezone('utc', now()) WHERE vld_id=@id and vld_deklar=@deklar;";
 	private static readonly string SqlUpdateVirsija = "UPDATE public.valid_virsija SET vld_tvirtinti=@tvrt,vld_pastabos=@pstb,vld_user=@usr,vld_date_modif=timezone('utc', now()),vld_nereiksm=@nereik,vld_nereiksm_apras=@nereikapras,vld_zmones=@zmones,vld_loq_reiksme=@loqr,vld_loq_verte=@loqv,vld_statusas=@stat,vld_tipas=@tipas WHERE vld_deklar=@deklar and vld_id=@id;";
 	private static async Task<Err> Save(HttpContext ctx, int deklaracija, DeklaravimasSet data, CancellationToken ct){
@@ -91,7 +91,7 @@ public static class Deklaravimas {
 				}
 				else {
 					param.Data["@id"]=i.ID; param.Data["@tvrt"]=i.Patvirtinta; param.Data["@pstb"]=i.Pastabos;
-					await db.Set(SqlUpdateTrukumas,param).Execute(ct);
+					param.Data["@kitas"]=i.KitasDaznumas; await db.Set(SqlUpdateTrukumas,param).Execute(ct);
 				}
 			}
 		}
