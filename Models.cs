@@ -207,8 +207,8 @@ public class RodiklisSet {
 public class Deklaravimas {
 	/// <summary>Deklaravimo statusas</summary>
 	public string? Statusas { get; set; }
-	/// <summary>Klaidų indikatorius</summary>
-	public bool Klaida { get; set; }
+	/// <summary>Nepatvirtintų neatitikčių indikatorius</summary>
+	public bool Klaida => Kartojasi + Trukumas + Virsijimas>0;
 	/// <summary>Nepatvirtinti trūkumo neatitiktys</summary>
 	public int Trukumas { get; set; }
 	/// <summary>Nepatvirtinti rodiklių pasikartojimai</summary>

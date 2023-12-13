@@ -16,6 +16,9 @@ public class User {
 	public string? FName { get; set; }
 	/// <summary>Pavardė</summary>
 	public string? LName { get; set; }
+	/// <summary>Asmens Kodas</summary>
+	[JsonIgnore] public string FullName => $"{FName} {LName}";
+
 	/// <summary>El.Paštas</summary>
 	public string? Email { get; set; }
 	/// <summary>Telefono numeris</summary>

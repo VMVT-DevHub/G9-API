@@ -47,12 +47,31 @@ public static class Deklaravimas {
 		public List<Klaida>? Virsijimas { get; set; }
 	}
 
-	/// <summary>Deklaracijos pateikimas (NEVEIKIA)</summary>
+	/// <summary>Deklaracijos pateikimas</summary>
 	/// <param name="ctx"></param><param name="ct"></param><returns></returns>
 	/// <param name="deklaracija">Deklaracijos ID</param>
 	public static async Task Submit(HttpContext ctx, int deklaracija, CancellationToken ct){
 		if(await Validate(ctx,deklaracija,ct)){
-			await ctx.Response.WriteAsync(JsonSerializer.Serialize( new G9.Models.Deklaravimas()),ct);
+			var usr = ctx.GetUser()??new();
+			var prms = new DBParams(("@deklar",deklaracija),("@usr",usr.ID));			
+			await new DBExec("SELECT public.valid_trukumas_set(@deklar,@usr), public.valid_kartojasi_set(@deklar,@usr), public.valid_virsija_set(@deklar,@usr);", prms).Execute(ct);
+			using var db = new DBExec("SELECT kartojasi, trukumas, virsija FROM public.valid_nepatvirtinta(@deklar);",prms);
+			using var rdr = await db.GetReader(ct);
+			if(await rdr.ReadAsync(ct)){
+				var ret = new G9.Models.Deklaravimas(){
+					Kartojasi=rdr.GetInt32(0),
+					Trukumas=rdr.GetInt32(1),
+					Virsijimas=rdr.GetInt32(2),
+				};
+				
+				if(!ret.Klaida){
+					var param = new DBParams(("@id",deklaracija),("@name",usr.FullName),("@usr",usr.ID));
+					await new DBExec("UPDATE public.deklaravimas SET dkl_status=3, dkl_deklar_date=timezone('utc',now()), dkl_deklar_user=@name, dkl_deklar_user_id=@usr,"+
+						" dkl_modif_date=timezone('utc',now()), dkl_modif_user=@name, dkl_modif_user_id=@usr WHERE dkl_id=@id;", param).Execute(ct);
+					ret.Statusas = "Deklaruota";
+				} else { ret.Statusas = "Yra nepatvirtintų neatitikčių"; }
+				await ctx.Response.WriteAsJsonAsync(ret, ct);
+			} else Error.E404(ctx,true);
 		}
 	}
 	

@@ -65,13 +65,16 @@ public static class Deklaracija {
 		var rdr = await db.GetReader(ct);
 		if(rdr.HasRows & rdr.Read()){
 			var gvts=rdr.GetLongN(0);
-			if(ctx.GetUser()?.Roles?.Contains(gvts??0) == true) {
-				var stat = rdr.GetIntN(0);
+			var usr=ctx.GetUser();
+			if(usr?.Roles?.Contains(gvts??0) == true) {
+				var stat = rdr.GetIntN(1);
 				if(stat is null) Error.E404(ctx, true);
 				else if(stat==3) Error.E422(ctx, true, $"Negalima keisti jau deklaruotų duomenų");
 				else {
-					var param = new DBParams(("@id",deklaracija), ("@kiekis",dcl.Kiekis),("@vartot",dcl.Vartotojai),("@medziag",dcl.RuosimoMedziagos));
-					await new DBExec("UPDATE public.deklaravimas SET dkl_kiekis=@kiekis, dkl_vartot=@vartot, dkl_medziagos=@medziag WHERE dkl_id=@id;", param).Execute(ct);
+					var param = new DBParams(("@id",deklaracija), ("@kiekis",dcl.Kiekis),("@vartot",dcl.Vartotojai),("@medziag",dcl.RuosimoMedziagos),
+						("@name",usr.FullName),("@usr",usr.ID));
+					await new DBExec("UPDATE public.deklaravimas SET dkl_kiekis=@kiekis, dkl_vartot=@vartot, dkl_medziagos=@medziag, "+
+						"dkl_modif_date=timezone('utc',now()), dkl_modif_user=@name, dkl_modif_user_id=@usr WHERE dkl_id=@id;", param).Execute(ct);
 					
 					ctx.Response.ContentType="application/json";
 					var options = new JsonWriterOptions{ Indented = false }; //todo: if debug
