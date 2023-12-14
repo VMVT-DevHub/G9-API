@@ -1,6 +1,5 @@
 namespace App.Auth;
 
-
 /// <summary>Autorizacijos reikalavimo funkcijos</summary>
 public static class Require {
 	/// <summary>Privaloma autorizacija</summary>

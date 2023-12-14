@@ -56,6 +56,7 @@ public static class Session {
 			using var rdr = db.GetReader();
 			if(!rdr.Read()) return false;
 			sess = new UserSession(){ SSID=ssid, User=rdr.GetObject<User>(0), Expire=rdr.GetDateTime(1), Extended=rdr.GetInt16(2) };
+			Cache[ssid] = sess;
 		}
 		if(sess.Expire < DateTime.UtcNow) { DropSession(ssid, ctx); return false; }
 		if(sess.Extend < DateTime.UtcNow) ExtendSession(sess, ctx);

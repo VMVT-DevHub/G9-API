@@ -1,5 +1,6 @@
 using App.VIISP;
 using App.Users;
+using App.Auth;
 
 namespace App.API;
 
@@ -49,4 +50,22 @@ public static class Auth {
 			}
 		}
 	}
+
+#if DEBUG
+	/// <summary>Prisijungti kaip juridinis asmuo</summary>
+	/// <param name="ctx">Http Context</param>
+	/// <param name="ja">Juridinio asmens kodas</param>
+	/// <param name="ct">Cancellation Token</param>
+	public static async Task Impersonate(HttpContext ctx, long ja, CancellationToken ct){
+		using var db = new DBExec("SELECT ja_title,ja_adresas FROM jar.data WHERE ja_id=@id;","@id",ja);
+		using var rdr = await db.GetReader(ct);
+		var usr = ctx.GetUser();
+		if(usr is not null && rdr.HasRows && await rdr.ReadAsync(ct)){
+			//TODO: Add log
+			usr.JA = new () { ID=ja, Title=rdr.GetStringN(0), Addr=rdr.GetStringN(1) };
+			usr.GetRoles();
+		}
+		else Error.E404(ctx,true);
+	}
+#endif
 }

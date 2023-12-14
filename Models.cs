@@ -1,6 +1,3 @@
-
-using App.API;
-
 namespace G9.Models;
 
 /// <summary>Deklaruojamų metų sąrašas veikloms pagal ūkio subjektus</summary>

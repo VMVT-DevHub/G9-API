@@ -8,6 +8,10 @@ app.MapGet("/auth/logout",Auth.Logout).Swagger("", "Vartotojo atsijungimas nuo s
 app.MapGet("/auth/login/evartai",Auth.Evartai).ExcludeFromDescription();
 app.MapGet("/api/user",Auth.Get).Swagger("","Informacija apie prisijungusį vartotoją").Response<G9.Models.Vartotojas>(200,401).RequireLogin();
 
+#if DEBUG 
+	app.MapGet("/auth/impersonate/{ja}",Auth.Impersonate).Swagger("","Prisijungti kaip juridinis asmuo").Produces(200).Errors(404,401,403).RequireLogin();
+#endif
+
 // Teisių delegavimas
 app.MapGet("/api/deleg",Delegavimas.Get).Swagger("","Gauti visas prisijungusio asmens administruojamų GVTS sąrašą.").Response<G9.Models.Delegavimas>(200,422,401,403,404).RequireRole();
 app.MapPost("/api/deleg/{gvts}",Delegavimas.Set).Swagger("","Pridėti deleguojamą asmenį").Produces(204).Errors(422,401,403,404).RequireRole();

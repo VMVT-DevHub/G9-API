@@ -1,4 +1,3 @@
-
 namespace App;
 
 /// <summary>Programos konfiguracija gaunama iš duomenų bazės</summary>
