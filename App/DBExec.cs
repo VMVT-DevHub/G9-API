@@ -191,7 +191,8 @@ public static class DBExtensions {
 	/// <param name="flush">atiduodamas įrašų kiekis</param>
 	/// <returns></returns>
 	public static async Task PrintObjectArray(string query, DBParams? dbparams,Utf8JsonWriter wrt, CancellationToken ct,int flush=20){
-		using var rdr = await new DBExec(query, dbparams??new()).GetReader(ct);
+		using var db = new DBExec(query, dbparams??new());
+		using var rdr = await db.GetReader(ct);
 		wrt.WriteStartArray();
 		await LoopObjects(rdr,wrt,ct,flush);
 		wrt.WriteEndArray();
@@ -207,7 +208,8 @@ public static class DBExtensions {
 	/// <param name="flush">atiduodamas įrašų kiekis</param>
 	/// <returns></returns>
 	public static async Task<int> PrintArray(string query, DBParams? dbparams,Utf8JsonWriter wrt, CancellationToken ct,CachedLookup? lookup=null, object? error=null,int flush=20){
-		using var rdr = await new DBExec(query, dbparams??new()).GetReader(ct);
+		using var db = new DBExec(query, dbparams??new());
+		using var rdr = await db.GetReader(ct);
 		wrt.WriteStartObject();
 		wrt.WritePropertyName("Fields");
 		wrt.WriteStartArray();
@@ -240,7 +242,8 @@ public static class DBExtensions {
 	/// <param name="flush">atiduodamas įrašų kiekis</param>
 	/// <returns></returns>
 	public static async Task PrintList(string query, DBParams? dbparams,Utf8JsonWriter wrt, CancellationToken ct,int field=0,int flush=200){
-		using var rdr = await new DBExec(query, dbparams??new()).GetReader(ct);
+		using var db = new DBExec(query, dbparams??new());
+		using var rdr = await db.GetReader(ct);
 		var act = GetAct(rdr,wrt,0);
 		var cnt=flush;
 		wrt.WriteStartArray();

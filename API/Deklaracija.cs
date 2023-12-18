@@ -61,7 +61,7 @@ public static class Deklaracija {
 	/// <param name="dcl">Deklaruojami duomenys</param>
 	/// <param name="ct"></param><returns></returns>
 	public static async Task Set(HttpContext ctx, long deklaracija, [FromBody] DeklaracijaSet dcl, CancellationToken ct){
-		var db = new DBExec("SELECT dkl_gvts,dkl_status FROM public.deklaravimas WHERE dkl_id=@id;",("@id",deklaracija));
+		using var db = new DBExec("SELECT dkl_gvts,dkl_status FROM public.deklaravimas WHERE dkl_id=@id;",("@id",deklaracija));
 		var rdr = await db.GetReader(ct);
 		if(rdr.HasRows & rdr.Read()){
 			var gvts=rdr.GetLongN(0);
