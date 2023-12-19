@@ -33,7 +33,7 @@ public class DBExec : IDisposable {
 	private NpgsqlCommand Command(string sql){
 		Conn ??= new NpgsqlConnection(DBProps.ConnString); Conn.Open();
 		if(UseTransaction) Transaction??=Conn.BeginTransaction();
-		Cmd ??= new NpgsqlCommand(sql,Conn,Transaction); Params?.Load(Cmd);
+		Cmd ??= new NpgsqlCommand(sql,Conn,Transaction); Params?.Load(ExecID,Cmd);
 		return Cmd;
 	}
 
@@ -41,7 +41,7 @@ public class DBExec : IDisposable {
 		Conn ??= new NpgsqlConnection(DBProps.ConnString);
 		if(Conn.State != System.Data.ConnectionState.Open) await Conn.OpenAsync(ct);
 		if(UseTransaction) Transaction??=await Conn.BeginTransactionAsync(ct);
-		Cmd ??= new NpgsqlCommand(sql,Conn,Transaction); Params?.Load(Cmd);
+		Cmd ??= new NpgsqlCommand(sql,Conn,Transaction); Params?.Load(ExecID,Cmd);
 		return Cmd;
 	}
 
@@ -384,10 +384,11 @@ public class DBParams {
 	/// <summary>Parametrai</summary>
 	public Dictionary<string, object?> Data { get; set; }
 	/// <summary>Įkelti parametrus į užklausą</summary>
+	/// <param name="id">Užklausos vykdymo ID</param>
 	/// <param name="cmd">Duomenų bazės komanda</param>
 	/// <param name="print">Spausdinti konsolėje</param>
-	public void Load(NpgsqlCommand cmd, bool print = false) { foreach (var i in Data) { if (!cmd.Parameters.Contains(i.Key)) { cmd.Parameters.AddWithValue(i.Key, i.Value ?? DBNull.Value); } }
-		if (DBExec.Debug) { Console.WriteLine($"[SQL] {cmd.CommandText} {(Data?.Count > 0 ? JsonSerializer.Serialize(Data) : "")}"); }
+	public void Load(long id, NpgsqlCommand cmd, bool print = false) { foreach (var i in Data) { if (!cmd.Parameters.Contains(i.Key)) { cmd.Parameters.AddWithValue(i.Key, i.Value ?? DBNull.Value); } }
+		if (print || DBExec.Debug) { Console.WriteLine($"[SQL] [{id}] {cmd.CommandText} {(Data?.Count > 0 ? JsonSerializer.Serialize(Data) : "")}"); }
 	}
 	/// <summary>Parametrų objekto iniciavimas</summary>
 	public DBParams() { Data = new (); }
