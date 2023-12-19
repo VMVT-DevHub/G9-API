@@ -15,7 +15,8 @@ public static class Config{
 	public static CfgData Reload(){
 		NextReload=DateTime.UtcNow.AddMinutes(1);
 		var ret = new CfgData();
-		using var rdr = new DBExec("SELECT cfg_group,cfg_key,cfg_val,cfg_int,cfg_num,cfg_text,cfg_date FROM app.config;").GetReader();
+		using var db = new DBExec("SELECT cfg_group,cfg_key,cfg_val,cfg_int,cfg_num,cfg_text,cfg_date FROM app.config;");
+		using var rdr = db.GetReader();
 		while(rdr.Read()){
 			var vGrp = rdr.GetString(0);
 			if(!ret.TryGetValue(vGrp, out var grp)) ret[vGrp]=grp=new();

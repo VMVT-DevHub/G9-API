@@ -8,7 +8,11 @@ namespace App;
 public static class DBProps {
 
 	/// <summary>Duombazės prisijungimas</summary>
-	public static string ConnString { get; set; } = Startup.ConnStr;
+	public static string ConnString { get; set; } = new NpgsqlConnectionStringBuilder(Startup.ConnStr) {
+			MaxPoolSize = 20, // Maximum number of connections in the pool
+			MinPoolSize = 5,  // Minimum number of connections in the pool
+			ConnectionIdleLifetime = 300,  // Maximum time (in seconds) that a connection can be idle in the pool	
+		}.ConnectionString;
 }
 
 /// <summary>Postgres konektorius</summary>
@@ -159,9 +163,9 @@ public class DBExec : IDisposable {
 					Cmd?.Dispose(); Cmd=null;
 					Conn?.Dispose(); Conn=null;
 					Transaction?.Dispose(); Transaction=null;
-					Console.WriteLine($"[SQL] Dispose [{ExecID}]");
+					Console.WriteLine($"[SQL] [{ExecID}] Dispose ");
 				} catch (Exception ex) {				
-					Console.WriteLine($"[SQLError] Dispose [{ExecID}] {ex.Message}");
+					Console.WriteLine($"[SQLError] [{ExecID}] Dispose  {ex.Message}");
 					Console.WriteLine(ex.StackTrace);
 				}
 
