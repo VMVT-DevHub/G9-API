@@ -13,8 +13,10 @@ public static class DBProps {
 
 /// <summary>Postgres konektorius</summary>
 public class DBExec : IDisposable {
+	private static long ExecCount { get; set; } 
 	/// <summary>Duomenų bazės užklausų atvaizdavimas konsolėje</summary>
 	public static bool Debug { get; set; } = Config.GetBool("Config","DebugDB",false);
+	private long ExecID{ get; set; }
 	/// <summary>Duomenų bazės užklausa</summary>
 	public string SQL { get; set; }
 	/// <summary>Užklausos parametrai</summary>
@@ -45,23 +47,23 @@ public class DBExec : IDisposable {
 
 	/// <summary>Duomenų bazės prisijungimo sukurimas</summary>
 	/// <param name="sql">Užklausa</param>
-	public DBExec(string sql){ SQL=sql; Params = new(); }
+	public DBExec(string sql){ SQL=sql; Params = new(); ExecID=ExecCount++; }
 
 	/// <summary>Duomenų bazės prisijungimo sukurimas</summary>
 	/// <param name="sql">Užklausa</param>
 	/// <param name="param">Parametras</param>
 	/// <param name="value">Reikšmė</param>
-	public DBExec(string sql, string param, object? value){ SQL=sql; Params = new(); Params.Add(param,value); }
+	public DBExec(string sql, string param, object? value){ SQL=sql; Params = new(); Params.Add(param,value);  ExecID=ExecCount++;}
 
 	/// <summary>Duomenų bazės prisijungimo sukurimas</summary>
 	/// <param name="sql">Užklausa</param>
 	/// <param name="param">Parametrai</param>
-	public DBExec(string sql, params ValueTuple<string, object?>[] param){ SQL=sql; Params = new(param); }
+	public DBExec(string sql, params ValueTuple<string, object?>[] param){ SQL=sql; Params = new(param); ExecID=ExecCount++; }
 
 	/// <summary>Duomenų bazės prisijungimo sukurimas</summary>
 	/// <param name="sql">Užklausa</param>
 	/// <param name="param">Parametrai</param>
-	public DBExec(string sql, DBParams param){ SQL=sql; Params=param; }
+	public DBExec(string sql, DBParams param){ SQL=sql; Params=param; ExecID=ExecCount++; }
 
 	/// <summary>Gauti duomenų skaitytuvą</summary>
 	/// <returns>NpgsqlDataReader</returns>
@@ -157,9 +159,9 @@ public class DBExec : IDisposable {
 					Cmd?.Dispose(); Cmd=null;
 					Conn?.Dispose(); Conn=null;
 					Transaction?.Dispose(); Transaction=null;
-					Console.WriteLine("[SQL] Dispose");
+					Console.WriteLine($"[SQL] Dispose [{ExecID}]");
 				} catch (Exception ex) {				
-					Console.WriteLine($"[SQLError] Dispose {ex.Message}");
+					Console.WriteLine($"[SQLError] Dispose [{ExecID}] {ex.Message}");
 					Console.WriteLine(ex.StackTrace);
 				}
 
