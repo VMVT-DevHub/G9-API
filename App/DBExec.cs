@@ -153,9 +153,16 @@ public class DBExec : IDisposable {
 	protected virtual void Dispose(bool disposing) {
 		if (!IsDisposed) {
 			if (disposing) {
-				Cmd?.Dispose(); Cmd=null;
-				Conn?.Dispose(); Conn=null;
-				Transaction?.Dispose(); Transaction=null;
+				try {
+					Cmd?.Dispose(); Cmd=null;
+					Conn?.Dispose(); Conn=null;
+					Transaction?.Dispose(); Transaction=null;
+					Console.WriteLine("[SQL] Dispose");
+				} catch (Exception ex) {				
+					Console.WriteLine($"[SQLError] Dispose {ex.Message}");
+					Console.WriteLine(ex.StackTrace);
+				}
+
 				//Dispose stuff;
 			}
 			IsDisposed = true;
