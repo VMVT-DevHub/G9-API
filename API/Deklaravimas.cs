@@ -112,11 +112,10 @@ public static class Deklaravimas {
 			foreach(var i in data.Trukumas){
 				if(i.Patvirtinta && i.Pastabos?.Length<5) {
 					(err.Trukumas??=new()).Add(new(i.ID,"Neįvesta arba per trumpa pastaba"));
+					i.Patvirtinta=false;
 				}
-				else {
-					param.Data["@id"]=i.ID; param.Data["@tvrt"]=i.Patvirtinta; param.Data["@pstb"]=i.Pastabos;
-					param.Data["@kitas"]=i.KitasDaznumas; await db.Execute(SqlUpdateTrukumas,param,ct);
-				}
+				param.Data["@id"]=i.ID; param.Data["@tvrt"]=i.Patvirtinta; param.Data["@pstb"]=i.Pastabos;
+				param.Data["@kitas"]=i.KitasDaznumas; await db.Execute(SqlUpdateTrukumas,param,ct);
 			}
 		}
 		if(data.Kartojasi?.Count>0){

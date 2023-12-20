@@ -96,13 +96,8 @@ public class DBExec : IDisposable {
 	/// <param name="param"></param>
 	/// <param name="ct"></param>
 	/// <returns>Įrašų skaičius</returns>
-	public async Task<int> Execute(string sql, DBParams param, CancellationToken ct) { 
-		Console.WriteLine(sql);
-		Params=param; var ret = await(await CommandAsync(sql,ct)).ExecuteNonQueryAsync(ct); if(!UseTransaction) Dispose(); return ret;}
+	public async Task<int> Execute(string sql, DBParams param, CancellationToken ct) { Params=param; var ret = await(await CommandAsync(sql,ct)).ExecuteNonQueryAsync(ct); if(!UseTransaction) Dispose(); return ret;}
 	
-		
-	
-
 	/// <summary>Vykdyti SQL užklausą</summary>
 	/// <returns>Įrašų skaičius</returns>
 	public object? ExecuteScalar() { var ret = Command(SQL).ExecuteScalar(); if(!UseTransaction) Dispose(); return ret;}
@@ -110,7 +105,6 @@ public class DBExec : IDisposable {
 	/// <summary>Vykdyti SQL užklausą grąžinant reikšmę</summary>
 	/// <returns>Įrašų skaičius</returns>
 	public T? ExecuteScalar<T>() { var ret = Command(SQL).ExecuteScalar(); if(!UseTransaction) Dispose(); return ret is T t ? t: default;}
-
 
 	/// <summary>Vykdyti SQL užklausą</summary>
 	/// <returns>Įrašų skaičius</returns>
