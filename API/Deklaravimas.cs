@@ -136,8 +136,8 @@ public static class Deklaravimas {
 					else if(i.Nereiksmingas.Value && !(i.NereiksmApras?.Length>4)) msg="Neįvestas arba per trumpas nereikšmingo viršijimo pagrindimas";
 					else if(i.LOQVerte is null) msg="Nepažymėta LOQ vertė";
 					else if(i.LOQVerte.Value && (i.LOQReiksme??0)==0) msg="Neįvesta LOQ vertė";
-					else if(!(i.Zmones>0)) msg="Neįvestas paveiktų žmoniu skaičius";
-					else if(tps.ContainsKey(i.Tipas?.ToString()??"")) msg="Nepasitinktas mėginių ėmimo vietos tipas";
+					else if(!(i.Zmones>0)) msg="Neįvestas paveiktų žmonių skaičius";
+					else if(tps.ContainsKey(i.Tipas?.ToString()??"")) msg="Nepasirinktas mėginių ėmimo vietos tipas";
 					else if(sts.ContainsKey(i.Statusas?.ToString()??"")) msg="Nepasirinktas stebėjimo statusas";
 					if(!string.IsNullOrEmpty(msg)){ (err.Virsijimas??=new()).Add(new(i.ID,msg)); i.Patvirtinta=false; }
 				}
