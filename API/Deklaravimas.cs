@@ -115,7 +115,7 @@ public static class Deklaravimas {
 				}
 				else {
 					param.Data["@id"]=i.ID; param.Data["@tvrt"]=i.Patvirtinta; param.Data["@pstb"]=i.Pastabos;
-					param.Data["@kitas"]=i.KitasDaznumas; await db.Set(SqlUpdateTrukumas,param).Execute(ct);
+					param.Data["@kitas"]=i.KitasDaznumas; await db.Execute(SqlUpdateTrukumas,param,ct);
 				}
 			}
 		}
@@ -123,7 +123,7 @@ public static class Deklaravimas {
 			var param = new DBParams(("@deklar",deklaracija),("@usr",usr),("@id",0),("@tvirt",false),("@past",""));
 			foreach(var i in data.Kartojasi){
 				param.Data["@id"]=i.ID; param.Data["@tvrt"]=i.Patvirtinta; param.Data["@pstb"]=i.Pastabos;
-				await db.Set(SqlUpdateKartojasi,param).Execute(ct);
+				await db.Execute(SqlUpdateKartojasi,param,ct);
 			}
 		}
 		if(data.Virsijimas?.Count>0){
@@ -145,7 +145,7 @@ public static class Deklaravimas {
 				param.Data["@id"]=i.ID; param.Data["@tvrt"]=i.Patvirtinta; param.Data["@pstb"]=i.Pastabos;
 				param.Data["@nereik"]=i.Nereiksmingas; param.Data["@nereikapras"]=i.NereiksmApras; param.Data["@zmones"]=i.Zmones; 
 				param.Data["@loqr"]=i.LOQReiksme; param.Data["@loqv"]=i.LOQVerte; param.Data["@stat"]=i.Statusas; param.Data["@tipas"]=i.Tipas;
-				await db.Set(SqlUpdateVirsija,param).Execute(ct);				
+				await db.Execute(SqlUpdateVirsija,param,ct);				
 			}
 		}
 		db.Transaction?.Commit();

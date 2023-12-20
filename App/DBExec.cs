@@ -83,9 +83,24 @@ public class DBExec : IDisposable {
 
 	/// <summary>Vykdyti SQL užklausą</summary>
 	/// <returns>Įrašų skaičius</returns>
-	public async Task<int> Execute(CancellationToken ct) { var sql=SQL; var ret = await(await CommandAsync(sql,ct)).ExecuteNonQueryAsync(ct); if(!UseTransaction) Dispose(); return ret;}
+	public async Task<int> Execute(CancellationToken ct) { var ret = await(await CommandAsync(SQL,ct)).ExecuteNonQueryAsync(ct); if(!UseTransaction) Dispose(); return ret;}
 	
+	/// <summary>Vykdyti SQL užklausą</summary>
+	/// <param name="sql"></param>
+	/// <param name="ct"></param>
+	/// <returns>Įrašų skaičius</returns>
+	public async Task<int> Execute(string sql, CancellationToken ct) { var ret = await(await CommandAsync(sql,ct)).ExecuteNonQueryAsync(ct); if(!UseTransaction) Dispose(); return ret;}
 	
+	/// <summary>Vykdyti SQL užklausą</summary>
+	/// <param name="sql"></param>
+	/// <param name="param"></param>
+	/// <param name="ct"></param>
+	/// <returns>Įrašų skaičius</returns>
+	public async Task<int> Execute(string sql, DBParams param, CancellationToken ct) { Params=param; var ret = await(await CommandAsync(sql,ct)).ExecuteNonQueryAsync(ct); if(!UseTransaction) Dispose(); return ret;}
+	
+		
+	
+
 	/// <summary>Vykdyti SQL užklausą</summary>
 	/// <returns>Įrašų skaičius</returns>
 	public object? ExecuteScalar() { var ret = Command(SQL).ExecuteScalar(); if(!UseTransaction) Dispose(); return ret;}
@@ -97,34 +112,11 @@ public class DBExec : IDisposable {
 
 	/// <summary>Vykdyti SQL užklausą</summary>
 	/// <returns>Įrašų skaičius</returns>
-	public async Task<object?> ExecuteScalar(CancellationToken ct) { var sql=SQL; var ret = await(await CommandAsync(sql,ct)).ExecuteScalarAsync(ct); if(!UseTransaction) Dispose(); return ret; }
+	public async Task<object?> ExecuteScalar(CancellationToken ct) { var ret = await(await CommandAsync(SQL,ct)).ExecuteScalarAsync(ct); if(!UseTransaction) Dispose(); return ret; }
 
 	/// <summary>Vykdyti SQL užklausą</summary>
 	/// <returns>Įrašų skaičius</returns>
-	public async Task<T?> ExecuteScalar<T>(CancellationToken ct) { var sql=SQL; var ret = await(await CommandAsync(sql,ct)).ExecuteScalarAsync(ct); if(!UseTransaction) Dispose(); return ret is T t ? t: default; }
-
-
-
-	/// <summary>Naujos užklausos sukūrimas</summary>
-	/// <param name="sql">Užklausa</param>
-	public DBExec Set(string sql) {	SQL = sql; Params=new(); return this; }
-
-	/// <summary>Naujos užklausos sukūrimas</summary>
-	/// <param name="sql">Užklausa</param>
-	/// <param name="param">Parametras</param>
-	/// <param name="value">Reikšmė</param>
-	public DBExec Set(string sql, string param, object? value){ SQL=sql; Params = new(); Params.Add(param,value); return this; }
-
-	/// <summary>Naujos užklausos sukūrimas</summary>
-	/// <param name="sql">Užklausa</param>
-	/// <param name="param">Parametrai</param>
-	public DBExec Set(string sql, params ValueTuple<string, object?>[] param){ SQL=sql; Params = new(param); return this; }
-
-	/// <summary>Naujos užklausos sukūrimas</summary>
-	/// <param name="sql">Užklausa</param>
-	/// <param name="param">Parametrai</param>
-	public DBExec Set(string sql, DBParams param){ SQL=sql; Params=param; return this; }
-
+	public async Task<T?> ExecuteScalar<T>(CancellationToken ct) { var ret = await(await CommandAsync(SQL,ct)).ExecuteScalarAsync(ct); if(!UseTransaction) Dispose(); return ret is T t ? t: default; }
 
 
 	/// <summary>Gauti įrašus kaip masyvą</summary>
