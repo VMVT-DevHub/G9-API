@@ -137,8 +137,8 @@ public static class Deklaravimas {
 					else if(i.LOQVerte is null) msg="Nepažymėta LOQ vertė";
 					else if(i.LOQVerte.Value && (i.LOQReiksme??0)==0) msg="Neįvesta LOQ vertė";
 					else if(!(i.Zmones>0)) msg="Neįvestas paveiktų žmonių skaičius";
-					else if(tps.ContainsKey(i.Tipas?.ToString()??"")) msg="Nepasirinktas mėginių ėmimo vietos tipas";
-					else if(sts.ContainsKey(i.Statusas?.ToString()??"")) msg="Nepasirinktas stebėjimo statusas";
+					else if(!tps.ContainsKey(i.Tipas?.ToString()??"")) msg="Nepasirinktas mėginių ėmimo vietos tipas";
+					else if(!sts.ContainsKey(i.Statusas?.ToString()??"")) msg="Nepasirinktas stebėjimo statusas";
 					if(!string.IsNullOrEmpty(msg)){ (err.Virsijimas??=new()).Add(new(i.ID,msg)); i.Patvirtinta=false; }
 				}
 				param.Data["@id"]=i.ID; param.Data["@tvrt"]=i.Patvirtinta; param.Data["@pstb"]=i.Pastabos;
