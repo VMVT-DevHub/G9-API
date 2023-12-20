@@ -37,7 +37,7 @@ public class DBExec : IDisposable {
 	private NpgsqlCommand Command(string sql){
 		Conn ??= new NpgsqlConnection(DBProps.ConnString); Conn.Open();
 		if(UseTransaction) Transaction??=Conn.BeginTransaction();
-		Cmd ??= new NpgsqlCommand(sql,Conn,Transaction); Params?.Load(ExecID,Cmd);
+		Cmd = new NpgsqlCommand(sql,Conn,Transaction); Params?.Load(ExecID,Cmd);
 		return Cmd;
 	}
 
@@ -45,7 +45,7 @@ public class DBExec : IDisposable {
 		Conn ??= new NpgsqlConnection(DBProps.ConnString);
 		if(Conn.State != System.Data.ConnectionState.Open) await Conn.OpenAsync(ct);
 		if(UseTransaction) Transaction??=await Conn.BeginTransactionAsync(ct);
-		Cmd ??= new NpgsqlCommand(sql,Conn,Transaction); Params?.Load(ExecID,Cmd);
+		Cmd = new NpgsqlCommand(sql,Conn,Transaction); Params?.Load(ExecID,Cmd);
 		return Cmd;
 	}
 
@@ -96,7 +96,9 @@ public class DBExec : IDisposable {
 	/// <param name="param"></param>
 	/// <param name="ct"></param>
 	/// <returns>Įrašų skaičius</returns>
-	public async Task<int> Execute(string sql, DBParams param, CancellationToken ct) { Params=param; var ret = await(await CommandAsync(sql,ct)).ExecuteNonQueryAsync(ct); if(!UseTransaction) Dispose(); return ret;}
+	public async Task<int> Execute(string sql, DBParams param, CancellationToken ct) { 
+		Console.WriteLine(sql);
+		Params=param; var ret = await(await CommandAsync(sql,ct)).ExecuteNonQueryAsync(ct); if(!UseTransaction) Dispose(); return ret;}
 	
 		
 	
