@@ -83,7 +83,7 @@ public class DBExec : IDisposable {
 
 	/// <summary>Vykdyti SQL užklausą</summary>
 	/// <returns>Įrašų skaičius</returns>
-	public async Task<int> Execute(CancellationToken ct) { var ret = await(await CommandAsync(SQL,ct)).ExecuteNonQueryAsync(ct); if(!UseTransaction) Dispose(); return ret;}
+	public async Task<int> Execute(CancellationToken ct) { var sql=SQL; var ret = await(await CommandAsync(sql,ct)).ExecuteNonQueryAsync(ct); if(!UseTransaction) Dispose(); return ret;}
 	
 	
 	/// <summary>Vykdyti SQL užklausą</summary>
@@ -97,11 +97,11 @@ public class DBExec : IDisposable {
 
 	/// <summary>Vykdyti SQL užklausą</summary>
 	/// <returns>Įrašų skaičius</returns>
-	public async Task<object?> ExecuteScalar(CancellationToken ct) { var ret = await(await CommandAsync(SQL,ct)).ExecuteScalarAsync(ct); if(!UseTransaction) Dispose(); return ret; }
+	public async Task<object?> ExecuteScalar(CancellationToken ct) { var sql=SQL; var ret = await(await CommandAsync(sql,ct)).ExecuteScalarAsync(ct); if(!UseTransaction) Dispose(); return ret; }
 
 	/// <summary>Vykdyti SQL užklausą</summary>
 	/// <returns>Įrašų skaičius</returns>
-	public async Task<T?> ExecuteScalar<T>(CancellationToken ct) { var ret = await(await CommandAsync(SQL,ct)).ExecuteScalarAsync(ct); if(!UseTransaction) Dispose(); return ret is T t ? t: default; }
+	public async Task<T?> ExecuteScalar<T>(CancellationToken ct) { var sql=SQL; var ret = await(await CommandAsync(sql,ct)).ExecuteScalarAsync(ct); if(!UseTransaction) Dispose(); return ret is T t ? t: default; }
 
 
 
