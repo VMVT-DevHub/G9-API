@@ -117,7 +117,7 @@ public class User {
 	}
 
 	private static User Update(User usr){
-		var msg = new DBExec("SELECT msg FROM app.user_mod(@ak,@fname,@lname,@email,@phone);", ("@ak",usr.AK),("@fname",usr.FName),("@lname",usr.LName),("@email",usr.Email),("@phone",usr.Phone)).ExecuteScalar()?.ToString();
+		var msg = new DBExec("SELECT msg FROM app.user_mod(@ak,@fname,@lname,@email,@phone);", ("@ak",usr.ID),("@fname",usr.FName),("@lname",usr.LName),("@email",usr.Email),("@phone",usr.Phone)).ExecuteScalar()?.ToString();
 		return string.IsNullOrEmpty(msg) ? usr : new UserError(1105,msg,usr); 
 	}
 }

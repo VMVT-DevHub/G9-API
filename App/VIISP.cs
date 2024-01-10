@@ -1,6 +1,5 @@
 using App.Users;
 using System.Collections.Concurrent;
-using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -47,9 +46,10 @@ public class Auth {
 	static Auth() {
 		HClient = new(){
 			Timeout = new TimeSpan(0,0,Config.GetInt("Auth", "Timeout", 15)), 
-			BaseAddress = new Uri($"https://{Config.GetVal("Auth", "Host")}/")
+			BaseAddress = new Uri($"{Config.GetVal("Auth", "Host")}/")
 		};
-		HClient.DefaultRequestHeaders.Add("X-Api-Key", Config.GetText("Auth", "Token"));
+		var tkn = Config.GetText("Auth", "Token");
+		if(!string.IsNullOrEmpty(tkn)) HClient.DefaultRequestHeaders.Add("X-Api-Key", tkn);
 	}
 
 
@@ -60,9 +60,9 @@ public class Auth {
 	public static async Task<AuthRequest> GetAuth(HttpContext ctx, string? r, CancellationToken ct){
 		LockIP(ctx);
 		if(!ct.IsCancellationRequested) {
-			var msg = new StringContent($"{{\"host\":\"{Config.GetVal("Auth","Redirect","http://localhost:5501/auth/login")}\"}}", new MediaTypeHeaderValue("application/json"));			
+			var msg = new StringContent($" ");			
 			try {
-				using var response = await HClient.PostAsync(Config.GetVal("Auth","GetSignin","/auth/evartai/sign"), msg, ct);
+				using var response = await HClient.PostAsync(Config.GetVal("Auth","GetSignin","/auth/sign"), msg, ct);
 				var rsp = await response.Content.ReadAsStringAsync(ct);
 				if(response.IsSuccessStatusCode){
 					var tck = JsonSerializer.Deserialize<AuthTicket>(rsp);					
@@ -78,30 +78,6 @@ public class Auth {
 		return new AuthRequestError(0);
 	}
 
-	/// <summary>Vartotojo autorizacijos tikrinimas</summary>
-	/// <param name="ticket">Autorizacijos kodas</param>
-	/// <param name="ctx"></param>
-	/// <param name="ct"></param>
-	public static async Task<AuthRequest> GetToken(Guid ticket, HttpContext ctx, CancellationToken ct){
-		if(Redirect.TryRemove(ticket, out var tck)){
-			if(tck.IP==ctx.GetIP()){
-				if(tck.Timeout>DateTime.UtcNow){
-					var m = new StringContent($"{{\"ticket\":\"{ticket}\",\"defaultGroupId\":null,\"refresh\":false}}",new MediaTypeHeaderValue("application/json"));			
-					try {
-						using var response = await HClient.PostAsync(Config.GetVal("Auth","GetLogin","/auth/evartai/login"), m, ct);
-						var rsp = await response.Content.ReadAsStringAsync(ct);
-						if(response.IsSuccessStatusCode){
-							var tkn = JsonSerializer.Deserialize<AuthToken>(rsp);						
-							if(!string.IsNullOrEmpty(tkn?.Token)){ 
-								tck.Token=tkn.Token; return tck; 
-							} else return new AuthRequestError(1010,"Negalimas prisijungimas",rsp);
-						} else return new AuthRequestError(1009,"Autorizacijos klaida",rsp);
-					} catch (Exception ex) { return new AuthRequestError(1008,"Prisijungimo validacijos klaida",ex.Message); }
-				} else return new AuthRequestError(1007,"Baigėsi prisijungimui skirtas laikas",tck.Timeout.ToString("u"));
-			} else return new AuthRequestError(1006,"Neteisingas prisijungimo adresas",tck.Timeout.ToString("u"));
-		} else return new AuthRequestError(1005,"Neatpažinta autorizacija",ticket.ToString());
-	}
-
 	/// <summary>Sesijos sukūrimas</summary>
 	/// <param name="req"></param>
 	/// <param name="ctx"></param>
@@ -109,7 +85,8 @@ public class Auth {
 	public static AuthRequest SessionInit(AuthRequest req, HttpContext ctx){
 		var usr=req.User;
 		if(usr is not null && long.TryParse(usr.AK, out var ak)){
-			var usl = User.Login(ak,usr.FName??"",usr.LName??"",usr.Email,usr.Phone,usr.JA,ctx);
+			var name = FixCase(usr.FName);
+			var usl = User.Login(ak,FixCase(usr.FName),FixCase(usr.LName),usr.Email,usr.Phone,usr.CompanyCode,ctx);
 			if(usl is UserError err) return new AuthRequestError(err.Code,err.Message,JsonSerializer.Serialize(err.ErrorData));
 			Session.CreateSession(usl,ctx);
 			usr.AK=null;
@@ -117,50 +94,33 @@ public class Auth {
 		}
 		return new AuthRequestError(1014,"Vartotojo kodas neatpažintas",JsonSerializer.Serialize(usr));
 	}
+	private static string FixCase(string? txt) => System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(txt?.ToLower()??"");
 
-	/// <summary>Vartotojo autorizacijos detalės</summary>
-	/// <param name="req">Autorizacijos užklausa</param>
+	/// <summary>Vartotojo autorizacijos tikrinimas</summary>
+	/// <param name="ticket">Autorizacijos kodas</param>
+	/// <param name="ctx"></param>
 	/// <param name="ct"></param>
-	public static async Task<AuthRequest> GetUserDetails(AuthRequest req, CancellationToken ct){
-		using var msg = new HttpRequestMessage(HttpMethod.Get, Config.GetVal("Auth","GetUser","/api/users/me?populate=groups"));
-		msg.Headers.Authorization = new("Bearer",req.Token);
-		try {
-			using var response = await HClient.SendAsync(msg,ct);
-			var rsp = await response.Content.ReadAsStringAsync(ct);
-			if(response.IsSuccessStatusCode){
-				var usr = JsonSerializer.Deserialize<AuthUser>(rsp);
-				new DBExec("insert into app.log_login (log_data) VALUES (@dt);","@dt",rsp).Execute();
-				if(!string.IsNullOrEmpty(usr?.AK)){ 
-					req.User=usr; 
-					return await GetUserGroups(req,ct);
-				}
-				else return new AuthRequestError(1013,"Vartotojas neatpažintas",rsp);
-			} else return new AuthRequestError(1012,"Vartotojas nerastas",rsp);
-		}
-		catch (Exception ex) { return new AuthRequestError(1011,"Vartotojo informacijos klaida",ex.Message); }
-	}
-
-		/// <summary>Vartotojo autorizacijos detalės</summary>
-	/// <param name="req">Autorizacijos užklausa</param>
-	/// <param name="ct"></param>
-	public static async Task<AuthRequest> GetUserGroups(AuthRequest req, CancellationToken ct){
-		if(req.User is null) return req;
-		var usr = req.User;
-		using var msg = new HttpRequestMessage(HttpMethod.Get, Config.GetVal("Auth","GetUser",$"/api/users/{usr.ID}?populate=groups"));
-		msg.Headers.Authorization = new("Bearer",req.Token);
-		try {
-			using var response = await HClient.SendAsync(msg,ct);
-			var rsp = await response.Content.ReadAsStringAsync(ct);
-			if(response.IsSuccessStatusCode){
-				var inf = JsonSerializer.Deserialize<AuthUserInfo>(rsp);
-				new DBExec("insert into app.log_login (log_data) VALUES (@dt);","@dt",rsp).Execute();
-				if (inf?.Groups is not null) foreach(var i in inf.Groups) if(i.Email==usr.Email && i.Phone==usr.Phone) usr.JA=i.JA; 
-				return req; 
-			} else return new AuthRequestError(1016,"Vartotojas nerastas",rsp);
-		}
-		catch (Exception ex) { return new AuthRequestError(1015,"Vartotojo informacijos klaida",ex.Message); }
+	public static async Task<AuthRequest> GetUser(Guid ticket, HttpContext ctx, CancellationToken ct){
+		if(Redirect.TryRemove(ticket, out var tck)){
+			if(tck.IP==ctx.GetIP()){
+				if(tck.Timeout>DateTime.UtcNow){			
+					try {
+						using var response = await HClient.GetAsync($"{Config.GetVal("Auth","GetUser",$"/auth/data")}?ticket={ticket}", ct);
+						var rsp = await response.Content.ReadAsStringAsync(ct);
+						if(response.IsSuccessStatusCode){
+							var usr = JsonSerializer.Deserialize<AuthUser>(rsp);
+							new DBExec("insert into app.log_login (log_data) VALUES (@dt);","@dt",rsp).Execute();
+							if(!string.IsNullOrEmpty(usr?.AK)){
+								tck.User=usr; return tck; 
+							} else return new AuthRequestError(1010,"Negalimas prisijungimas",rsp);
+						} else return new AuthRequestError(1009,"Autorizacijos klaida",rsp);
+					} catch (Exception ex) { return new AuthRequestError(1008,"Prisijungimo validacijos klaida",ex.Message); }
+				} else return new AuthRequestError(1007,"Baigėsi prisijungimui skirtas laikas",tck.Timeout.ToString("u"));
+			} else return new AuthRequestError(1006,"Neteisingas prisijungimo adresas",tck.Timeout.ToString("u"));
+		} else return new AuthRequestError(1005,"Neatpažinta autorizacija",ticket.ToString());
 	}
 }
+
 
 /// <summary>Autorizacijos apsauga</summary>
 public class AuthLock {
@@ -182,8 +142,6 @@ public class AuthRequest {
 	public string? Return { get; set; }
 	/// <summary>Vartotojo autorizacijos laiko limitas</summary>
 	public DateTime Timeout { get; set; }
-	/// <summary>Vartotojo autorizacijos raktas</summary>
-	public string? Token { get; set; }
 	/// <summary>Vartotojo duomenys</summary>
 	public AuthUser? User { get; set; }
 	
@@ -227,47 +185,8 @@ public class AuthRequestError : AuthRequest {
 	}
 }
 
-/// <summary>BIIP Vartotojo detalės</summary>
-public class AuthUser {
-	/// <summary>BIIP ID</summary>
-	[JsonPropertyName("id")] public int ID { get; set; }
-	/// <summary>Juridinio asmens kodas</summary>
-	[JsonPropertyName("companyCode")] public string? JA { get; set;}
-	/// <summary>AK</summary>
-	[JsonPropertyName("personalCode")] public string? AK { get; set; }
-	/// <summary>Vardas</summary>
-	[JsonPropertyName("firstName")] public string? FName { get; set; }
-	/// <summary>Pavardė</summary>
-	[JsonPropertyName("lastName")] public string? LName { get; set; }
-	/// <summary>El. Paštas</summary>
-	[JsonPropertyName("email")] public string? Email { get; set; }
-	/// <summary>Tel. Nr.</summary>
-	[JsonPropertyName("phone")] public string? Phone { get; set; }
-	/// <summary>Vartotojo tipas</summary>
-	[JsonPropertyName("type")] public string? Type { get; set; }
-	/// <summary>Pilnas vardas</summary>
-	[JsonPropertyName("fullName")] public string? Name { get; set; }
-}
-
-/// <summary>JA Grupės</summary>
-public class AuthGroups {
-	/// <summary></summary>
-	[JsonPropertyName("id")] public int ID { get; set; }
-	/// <summary>BIIP identifikatorius</summary>
-	[JsonPropertyName("companyCode")] public string? JA { get; set; }
-	/// <summary>JA Kodas</summary>
-	[JsonPropertyName("name")] public string? Name { get; set; }
-	/// <summary>JA Pavadinimas</summary>
-	[JsonPropertyName("companyEmail")] public string? Email { get; set; }
-	/// <summary>Tel. Nr.</summary>
-	[JsonPropertyName("companyPhone")] public string? Phone { get; set; }
-}
-
 /// <summary>Vartotojo informacija</summary>
-public class AuthUserInfo {
-	
-	/// <summary>BIIP ID</summary>
-	[JsonPropertyName("id")] public int ID { get; set; }
+public class AuthUser {
 	/// <summary>Vardas</summary>
 	[JsonPropertyName("firstName")] public string? FName { get; set; }
 	/// <summary>Pavardė</summary>
@@ -275,16 +194,18 @@ public class AuthUserInfo {
 	/// <summary>El. Paštas</summary>
 	[JsonPropertyName("email")] public string? Email { get; set; }
 	/// <summary>Tel. Nr.</summary>
-	[JsonPropertyName("phone")] public string? Phone { get; set; }
-	/// <summary>Pilnas vardas</summary>
-	[JsonPropertyName("fullName")] public string? Name { get; set; }
-	/// <summary>Deleguoti JA</summary>
-	[JsonPropertyName("groups")] public List<AuthGroups>? Groups { get; set; }
+	[JsonPropertyName("phoneNumber")] public string? Phone { get; set; }
+	/// <summary>Asmens kodas</summary>
+	[JsonPropertyName("lt-personal-code")] public string? AK { get; set; }
+	/// <summary>Juridinio asmens kodas</summary>
+	[JsonPropertyName("lt-company-code")] public string? CompanyCode { get; set; }
+	/// <summary>Juridinio asmens pavadinimas</summary>
+	[JsonPropertyName("companyName")] public string? CompanyName { get; set; }
 }
 
 
-/// <summary>BIIP Autorizacija</summary>
-public class AuthTicket{
+/// <summary>VIISP Autorizacija</summary>
+public class AuthTicket {
 	/// <summary>AUtorizacijos kodas</summary>
 	[JsonPropertyName("ticket")] public Guid? Ticket { get; set; }
 	/// <summary>VIISP adresas</summary>
@@ -293,8 +214,10 @@ public class AuthTicket{
 	[JsonPropertyName("url")] public string? Url { get; set; }
 }
 
-/// <summary>BIIP Vartotojo autorizacija</summary>
-public class AuthToken{
-	/// <summary>Prisijungitmo raktas</summary>
-	[JsonPropertyName("token")] public string? Token { get; set; }
+/// <summary>VIISP Autorizacijos atsakas</summary>
+public class AuthReturn {
+	/// <summary>Autorizacijos kodas</summary>
+	[JsonPropertyName("ticket")] public string? Ticket { get; set; }
+	/// <summary>VIISP adresas</summary>
+	[JsonPropertyName("customData")] public string? customData { get; set; }
 }

@@ -151,7 +151,6 @@ public class DBExec : IDisposable {
 					Cmd?.Dispose(); Cmd=null;
 					Conn?.Dispose(); Conn=null;
 					Transaction?.Dispose(); Transaction=null;
-					Console.WriteLine($"[SQL] [{ExecID}] Dispose ");
 				} catch (Exception ex) {				
 					Console.WriteLine($"[SQLError] [{ExecID}] Dispose  {ex.Message}");
 					Console.WriteLine(ex.StackTrace);

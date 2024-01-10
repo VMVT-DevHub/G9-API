@@ -5,7 +5,7 @@ app.MapGet("/",()=>"").ExcludeFromDescription();
 
 app.MapGet("/auth/login",Auth.Login).Swagger("", "Vartotojas peradresuojamas į VIISP prisijungimą").Produces(302);
 app.MapGet("/auth/logout",Auth.Logout).Swagger("", "Vartotojo atsijungimas nuo sistemos.").Produces(302);
-app.MapGet("/auth/login/evartai",Auth.Evartai).ExcludeFromDescription();
+app.MapPost("/auth/login",Auth.Evartai).ExcludeFromDescription();
 app.MapGet("/api/user",Auth.Get).Swagger("","Informacija apie prisijungusį vartotoją").Response<G9.Models.Vartotojas>(200,401).RequireLogin();
 
 #if DEBUG 

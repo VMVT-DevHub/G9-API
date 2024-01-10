@@ -34,18 +34,17 @@ public static class Auth {
 
 	/// <summary>Vartotojo prisijungimas</summary>
 	/// <param name="ctx">Http Context</param>
-	/// <param name="ticket">Autorizacijos numeris</param>
-	/// <param name="customData">Popildomos prisijungimo detalės</param>
 	/// <param name="ct">Cancellation Token</param>
-	public static async Task Evartai(HttpContext ctx, Guid ticket, string customData, CancellationToken ct){
-		var tkn = await VIISP.Auth.GetToken(ticket,ctx,ct);
-		if(tkn.Valid(ctx) && tkn?.Token is not null) {
-			tkn = await VIISP.Auth.GetUserDetails(tkn, ct);
-			if(tkn.Valid(ctx) && tkn?.User is not null) {
-				tkn = VIISP.Auth.SessionInit(tkn, ctx);				
-				if(tkn.Valid(ctx)) {
-					var ret = tkn.Return ?? "/";
-					ctx.Response.Redirect(string.IsNullOrEmpty(ret) ? "/" : ret);
+	public static async Task Evartai(HttpContext ctx, CancellationToken ct){
+		if(ctx.Request.HasFormContentType && ctx.Request.Form.TryGetValue("ticket", out var tks)){
+			if(Guid.TryParse(tks, out var ticket)){
+				var tkn = await VIISP.Auth.GetUser(ticket,ctx,ct);
+				if(tkn.Valid(ctx) && tkn?.User is not null) {
+					tkn = VIISP.Auth.SessionInit(tkn, ctx);				
+					if(tkn.Valid(ctx)) {
+						var ret = tkn.Return ?? "/";
+						ctx.Response.Redirect(string.IsNullOrEmpty(ret) ? "/" : ret);					
+					}
 				}
 			}
 		}
