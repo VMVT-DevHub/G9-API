@@ -11,18 +11,18 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Setup .NET Core SDK '7.0.x'
+      - name: Setup .NET Core SDK '8.0.x'
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '7.0.x'
+          dotnet-version: '8.0.x'
       - name: Build
-        run: dotnet publish -c Debug -r rhel.9-x64 -p:PublishSingleFile=true --self-contained false
+        run: dotnet publish -c Debug -r linux-x64 -p:PublishSingleFile=true --self-contained false
         
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
            name: test-build
-           path: ./bin/Debug/net7.0/rhel.9-x64/publish/
+           path: ./bin/Debug/net8.0/linux-x64/publish/
       
   deploy:
     name: Deploy to test
