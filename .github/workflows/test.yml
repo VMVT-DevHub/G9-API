@@ -22,7 +22,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
            name: test-build
-           path: ./bin/Debug/net7.0/rhel.9-x64/publish/
+           path: ./bin/Debug/net8.0/linux-x64/publish/
       
   deploy:
     name: Deploy to test
