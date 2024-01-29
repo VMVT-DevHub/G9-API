@@ -58,6 +58,10 @@ public static class Auth {
 	public static async Task Impersonate(HttpContext ctx, long ja, CancellationToken ct){
 		using var db = new DBExec("SELECT ja_title,ja_adresas FROM jar.data WHERE ja_id=@id;","@id",ja);
 		using var rdr = await db.GetReader(ct);
+		if(ja==1234){
+			VIISP.Auth.SessionInit(new(){ User=new(){ AK="10000001234", Email="test@vmvt.lt", Phone="+37060000000", FName="Test", LName="Test"}}, ctx);
+		}
+		
 		var usr = ctx.GetUser();
 		if(usr is not null && rdr.HasRows && await rdr.ReadAsync(ct)){
 			//TODO: Add log

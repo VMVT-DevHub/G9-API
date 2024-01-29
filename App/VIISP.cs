@@ -85,7 +85,6 @@ public class Auth {
 	public static AuthRequest SessionInit(AuthRequest req, HttpContext ctx){
 		var usr=req.User;
 		if(usr is not null && long.TryParse(usr.AK, out var ak)){
-			var name = FixCase(usr.FName);
 			var usl = User.Login(ak,FixCase(usr.FName),FixCase(usr.LName),usr.Email,usr.Phone,usr.CompanyCode,ctx);
 			if(usl is UserError err) return new AuthRequestError(err.Code,err.Message,JsonSerializer.Serialize(err.ErrorData));
 			Session.CreateSession(usl,ctx);

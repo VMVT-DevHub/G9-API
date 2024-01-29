@@ -9,7 +9,7 @@ app.MapPost("/auth/login",Auth.Evartai).ExcludeFromDescription();
 app.MapGet("/api/user",Auth.Get).Swagger("","Informacija apie prisijungusį vartotoją").Response<G9.Models.Vartotojas>(200,401).RequireLogin();
 
 #if DEBUG 
-	app.MapGet("/auth/impersonate/{ja}",Auth.Impersonate).Swagger("","Prisijungti kaip juridinis asmuo").Produces(200).Errors(404,401,403).RequireLogin();
+	app.MapGet("/auth/impersonate/{ja}",Auth.Impersonate).Swagger("","Prisijungti kaip juridinis asmuo").Produces(200).ExcludeFromDescription();
 #endif
 
 // Teisių delegavimas
