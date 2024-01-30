@@ -1,4 +1,4 @@
-name: Test release
+name: Prod release
 on:
   push:
     branches:
@@ -25,7 +25,7 @@ jobs:
            path: ./bin/Debug/net8.0/linux-x64/publish/
       
   deploy:
-    name: Deploy to test
+    name: Deploy to production
     runs-on: ubuntu-latest
     needs: build
     
