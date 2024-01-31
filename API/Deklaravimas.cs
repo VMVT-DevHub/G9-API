@@ -126,25 +126,29 @@ public static class Deklaravimas {
 			}
 		}
 		if(data.Virsijimas?.Count>0){
-			DeklarVirsijimasVal.TryGetValue("Tipas",out var tps); tps??=new();
-			DeklarVirsijimasVal.TryGetValue("Statusas",out var sts); sts??=new();
+			DeklarVirsijimasVal.TryGetValue("Tipas",out var tps); tps??=[];
+			DeklarVirsijimasVal.TryGetValue("Statusas",out var sts); sts??=[];
 			var param = new DBParams(("@deklar",deklaracija),("@usr",usr),("@id",0),("@tvirt",false),("@past",""));
 			foreach(var i in data.Virsijimas){
-				if(i.Patvirtinta) {
-					string? msg=null;
-					if(i.Nereiksmingas is null) msg="Nepažymėtas reikšmingumas";
-					else if(i.Nereiksmingas.Value && !(i.NereiksmApras?.Length>4)) msg="Neįvestas arba per trumpas nereikšmingo viršijimo pagrindimas";
-					else if(i.LOQVerte is null) msg="Nepažymėta LOQ vertė";
-					else if(i.LOQVerte.Value && (i.LOQReiksme??0)==0) msg="Neįvesta LOQ vertė";
-					else if(!(i.Zmones>0)) msg="Neįvestas paveiktų žmonių skaičius";
-					else if(!tps.ContainsKey(i.Tipas?.ToString()??"")) msg="Nepasirinktas mėginių ėmimo vietos tipas";
-					else if(!sts.ContainsKey(i.Statusas?.ToString()??"")) msg="Nepasirinktas stebėjimo statusas";
-					if(!string.IsNullOrEmpty(msg)){ (err.Virsijimas??=new()).Add(new(i.ID,msg)); i.Patvirtinta=false; }
-				}
-				param.Data["@id"]=i.ID; param.Data["@tvrt"]=i.Patvirtinta; param.Data["@pstb"]=i.Pastabos;
-				param.Data["@nereik"]=i.Nereiksmingas; param.Data["@nereikapras"]=i.NereiksmApras; param.Data["@zmones"]=i.Zmones; 
-				param.Data["@loqr"]=i.LOQReiksme; param.Data["@loqv"]=i.LOQVerte; param.Data["@stat"]=i.Statusas; param.Data["@tipas"]=i.Tipas;
-				await db.Execute(SqlUpdateVirsija,param,ct);				
+				if(i.ID>0){
+					if(i.Patvirtinta) {
+						string? msg=null;
+						if(new DBExec("SELECT public.valid_virsija_detales(@id);","@id",i.ID).ExecuteScalar<bool>()){
+							if(i.Nereiksmingas is null) msg="Nepažymėtas reikšmingumas";
+							else if(i.Nereiksmingas.Value && !(i.NereiksmApras?.Length>4)) msg="Neįvestas arba per trumpas nereikšmingo viršijimo pagrindimas";
+							else if(i.LOQVerte is null) msg="Nepažymėta LOQ vertė";
+							else if(i.LOQVerte.Value && (i.LOQReiksme??0)==0) msg="Neįvesta LOQ vertė";
+							else if(!(i.Zmones>0)) msg="Neįvestas paveiktų žmonių skaičius";
+							else if(!tps.ContainsKey(i.Tipas?.ToString()??"")) msg="Nepasirinktas mėginių ėmimo vietos tipas";
+							else if(!sts.ContainsKey(i.Statusas?.ToString()??"")) msg="Nepasirinktas stebėjimo statusas";
+						} else if(i.Pastabos?.Length<5) { msg="Neįvesta arba per trumpa pastaba"; }
+						if(!string.IsNullOrEmpty(msg)){ (err.Virsijimas??=[]).Add(new(i.ID,msg)); i.Patvirtinta=false; }
+					}
+					param.Data["@id"]=i.ID; param.Data["@tvrt"]=i.Patvirtinta; param.Data["@pstb"]=i.Pastabos;
+					param.Data["@nereik"]=i.Nereiksmingas; param.Data["@nereikapras"]=i.NereiksmApras; param.Data["@zmones"]=i.Zmones; 
+					param.Data["@loqr"]=i.LOQReiksme; param.Data["@loqv"]=i.LOQVerte; param.Data["@stat"]=i.Statusas; param.Data["@tipas"]=i.Tipas;
+					await db.Execute(SqlUpdateVirsija,param,ct);
+				}				
 			}
 		}
 		db.Transaction?.Commit();
