@@ -28,6 +28,8 @@ public class GVTS {
 	/// <summary>Ūkio subjekto numeris</summary>
 	public long JA { get; set; }
 	/// <summary>Pavadinimas</summary>
+	public string? GVTOT { get; set; }
+	/// <summary>Pavadinimas</summary>
 	public string? Title { get; set; }
 	/// <summary>Adresas</summary>
 	public string? Addr { get; set; }
