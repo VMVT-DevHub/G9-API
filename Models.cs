@@ -302,6 +302,14 @@ public class ValidVirsijimas {
 	public bool Patvirtinta { get; set; }
 	/// <summary>Pastabos</summary>
 	public string? Pastabos { get; set; }
+	/// <summary>Virsijimo priežastis</summary>
+	public string? Priezastis { get; set; }
+	/// <summary>Taikomasis veiksmas</summary>
+	public int Veiksmas { get; set; }
+	/// <summary>Taikomojo veiksmo pradžia</summary>
+	public DateOnly Pradzia { get; set; }
+	/// <summary>Taikomojo veiksmo pabaiga</summary>
+	public DateOnly Pabaiga { get; set; }
 }
 
 
@@ -362,6 +370,15 @@ public class DeklarValidVirsijimas{
 	public bool Patvirtinta { get; set; }
 	/// <summary></summary>
 	public string? Pastabos { get; set; }
+	/// <summary>Virsijimo priežastis</summary>
+	public string? Priezastis { get; set; }
+	/// <summary>Taikomasis veiksmas</summary>
+	public int Veiksmas { get; set; }
+	/// <summary>Taikomojo veiksmo pradžia</summary>
+	public DateOnly Pradzia { get; set; }
+	/// <summary>Taikomojo veiksmo pabaiga</summary>
+	public DateOnly Pabaiga { get; set; }
+
 }
 
 

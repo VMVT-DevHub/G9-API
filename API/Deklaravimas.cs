@@ -8,7 +8,7 @@ namespace App.API;
 /// <summary>Deklaravimo API</summary>
 public static class Deklaravimas {	
 	/// <summary>Deklaravimo viršijimo statinės reikšmės</summary>
-	public static CachedLookup DeklarVirsijimasVal { get; } = new CachedLookup("Virsijimas", ("Tipas","lkp_vietos_tipas"),("Statusas","lkp_stebejimo_statusas"));
+	public static CachedLookup DeklarVirsijimasVal { get; } = new CachedLookup("Virsijimas", ("Tipas","lkp_vietos_tipas"),("Statusas","lkp_stebejimo_statusas"),("Veiksmas","lkp_virs_taisomas_veiksmas"),("Priezastis","lkp_virs_taisomas_priezastis"));
 
 	/// <summary>Deklaracijos validacija</summary>
 	/// <param name="ctx"></param>
@@ -128,6 +128,8 @@ public static class Deklaravimas {
 		if(data.Virsijimas?.Count>0){
 			DeklarVirsijimasVal.TryGetValue("Tipas",out var tps); tps??=[];
 			DeklarVirsijimasVal.TryGetValue("Statusas",out var sts); sts??=[];
+			DeklarVirsijimasVal.TryGetValue("Veiksmas",out var vks); vks??=[];
+			DeklarVirsijimasVal.TryGetValue("Priezastis",out var prz); prz??=[];
 			var param = new DBParams(("@deklar",deklaracija),("@usr",usr),("@id",0),("@tvirt",false),("@past",""));
 			foreach(var i in data.Virsijimas){
 				if(i.ID>0){
@@ -142,6 +144,16 @@ public static class Deklaravimas {
 							else if(!tps.ContainsKey(i.Tipas?.ToString()??"")) msg="Nepasirinktas mėginių ėmimo vietos tipas";
 							else if(!sts.ContainsKey(i.Statusas?.ToString()??"")) msg="Nepasirinktas stebėjimo statusas";
 						} else if(i.Pastabos?.Length<5) { msg="Neįvesta arba per trumpa pastaba"; }
+
+					//TODO: Įjungti validaciją
+					//	if(msg is null){
+					//		if(!vks.ContainsKey(i.Veiksmas.ToString()??"")) msg="Nepasirinktas viršijimo taisomasis veiksmas";
+					//		else if(!prz.ContainsKey(i.Priezastis?.ToString()??"")) msg="Nepasirinkta viršijimo priežastis";
+					//		else if(i.Pradzia==DateOnly.MinValue) msg="Nepasirinkta taisomojo veiksmo pradžios data";
+					//		else if(i.Pabaiga==DateOnly.MinValue) msg="Nepasirinkta taisomojo veiksmo pabaigos data";
+					//		else if(i.Pabaiga>i.Pabaiga) msg="Taisomojo veiksmo pradžios data negali būti vėlesne negu pabaigos";
+					//	}
+
 						if(!string.IsNullOrEmpty(msg)){ (err.Virsijimas??=[]).Add(new(i.ID,msg)); i.Patvirtinta=false; }
 					}
 					param.Data["@id"]=i.ID; param.Data["@tvrt"]=i.Patvirtinta; param.Data["@pstb"]=i.Pastabos;
