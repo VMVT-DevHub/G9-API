@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace App.API;
 
 /// <summary>Reikšmių API</summary>
-public static class Reiksmes{
+public static class Reiksmes {
 	/// <summary>Gauti suvestas rodiklių reikšmes</summary>
 	/// <param name="ctx"></param>
 	/// <param name="ct"></param>

@@ -114,7 +114,6 @@ public class DBExec : IDisposable {
 	/// <returns>Įrašų skaičius</returns>
 	public async Task<T?> ExecuteScalar<T>(CancellationToken ct) { var ret = await(await CommandAsync(SQL,ct)).ExecuteScalarAsync(ct); if(!UseTransaction) Dispose(); return ret is T t ? t: default; }
 
-
 	/// <summary>Gauti įrašus kaip masyvą</summary>
 	/// <typeparam name="T">Įrašo formatas</typeparam>
 	/// <param name="col">Įrašo stulpelis</param>
@@ -125,7 +124,7 @@ public class DBExec : IDisposable {
 		while(rdr.Read()) if(!rdr.IsDBNull(col)) ret.Add(rdr.GetFieldValue<T>(col));
 		Dispose();return ret;
 	}
-
+	
 	/// <summary>Gauti įrašus kaip masyvą</summary>
 	/// <typeparam name="T">Įrašo formatas</typeparam>
 	/// <param name="col">Įrašo stulpelis</param>

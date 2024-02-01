@@ -105,7 +105,12 @@ public static class Startup {
 	/// <summary>Reikalauti vartotojo rolės</summary>
 	/// <param name="builder"></param><returns></returns>
 	public static RouteHandlerBuilder RequireRole(this RouteHandlerBuilder builder) => builder.AddEndpointFilter(Require.Role);
+
 	/// <summary>Reikalauti vartotojo prisijungimo</summary>
 	/// <param name="builder"></param><returns></returns>
 	public static RouteHandlerBuilder RequireLogin(this RouteHandlerBuilder builder) => builder.AddEndpointFilter(Require.Login);
+
+	/// <summary>Reikalauti API prisijungimo rakto</summary>
+	/// <param name="builder"></param><returns></returns>
+	public static RouteHandlerBuilder RequireAPIKey(this RouteHandlerBuilder builder) => builder.AddEndpointFilter(Require.APIKey);
 }

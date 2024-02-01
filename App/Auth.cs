@@ -1,3 +1,5 @@
+using System.ComponentModel;
+
 namespace App.Auth;
 
 /// <summary>Autorizacijos reikalavimo funkcijos</summary>
@@ -17,6 +19,10 @@ public static class Require {
 	public static async ValueTask<object?> AdminRole (EndpointFilterInvocationContext ctx, EndpointFilterDelegate next) =>
 		ctx.HttpContext.GetAuth() ? (ctx.HttpContext.GetUser()?.Admin?.Count>0 ? await next(ctx) : Error.E403(ctx.HttpContext)) : Error.E401(ctx.HttpContext);
 
+	/// <summary>API prieiga</summary>
+	/// <param name="ctx"></param><param name="next"></param><returns></returns>
+	public static async ValueTask<object?> APIKey(EndpointFilterInvocationContext ctx, EndpointFilterDelegate next) => 
+		ctx.HttpContext.GetApiAuth() ? await next(ctx) : Error.E401(ctx.HttpContext);
 }
 
 /// <summary>Klaidos standartinis modelis</summary>

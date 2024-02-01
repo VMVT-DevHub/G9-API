@@ -44,5 +44,10 @@ app.MapGet("/api/reiksmes/{deklaracija}",Reiksmes.Get).Swagger("","Gauti deklaru
 app.MapPost("/api/reiksmes/{deklaracija}",Reiksmes.Set).Swagger("","Įrašomos rodiklių reikšmės").Produces(204).Errors(422,401,403,404).RequireRole();
 app.MapDelete("/api/reiksmes/{deklaracija}",Reiksmes.Del).Swagger("","Pašalinti rodiklių reikšmes deklaracijoje").Produces(204).Errors(422,401,403,404).RequireRole();
 
+//API suvedimas
+app.MapGet("/api/rodikliai/{deklaracija}",Reiksmes.Get).Swagger("","Gauti visas deklaracijos rodiklių reikšmes").RequireAPIKey();
+app.MapPost("/api/rodikliai/{deklaracija}",Reiksmes.Set).Swagger("","Įvesti deklaracijos rodiklių reikšmes").RequireAPIKey();
+app.MapDelete("/api/rodikliai/{deklaracija}",Reiksmes.Del).Swagger("","pašalinti deklaracijos rodiklių reikšmes").RequireAPIKey();
+
 
 app.Run();
