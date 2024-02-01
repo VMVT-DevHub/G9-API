@@ -85,7 +85,7 @@ public static class Session {
 				} else {
 					ApiCheck(ctx,key);
 					var rfr = now.AddSeconds(Config.GetInt("Session","ApiCache",60));
-					using var db = new DBExec("SELECT \"UID\",\"Deklar\",\"Exp\" FROM app.api_auth(@key);", "@key", key.FirstOrDefault());
+					using var db = new DBExec("SELECT \"ID\",\"Deklar\",\"Exp\" FROM app.api_auth(@key);", "@key", key.FirstOrDefault());
 					using var rdr = db.GetReader();
 					if(rdr.Read()){
 						ApiCache[key] = new(){ ID=rdr.GetGuid(0), Key=key, Refresh=rfr, Deklaracija=rdr.GetIntN(1)??0, Expire=DateOnly.FromDateTime(rdr.GetDateTimeN(2)??now) };
