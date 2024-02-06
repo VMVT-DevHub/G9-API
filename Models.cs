@@ -303,9 +303,9 @@ public class ValidVirsijimas {
 	/// <summary>Pastabos</summary>
 	public string? Pastabos { get; set; }
 	/// <summary>Virsijimo priežastis</summary>
-	public string? Priezastis { get; set; }
+	public int? Priezastis { get; set; }
 	/// <summary>Taikomasis veiksmas</summary>
-	public int Veiksmas { get; set; }
+	public string? Veiksmas { get; set; }
 	/// <summary>Taikomojo veiksmo pradžia</summary>
 	public DateOnly Pradzia { get; set; }
 	/// <summary>Taikomojo veiksmo pabaiga</summary>
