@@ -371,9 +371,9 @@ public class DeklarValidVirsijimas{
 	/// <summary></summary>
 	public string? Pastabos { get; set; }
 	/// <summary>Virsijimo priežastis</summary>
-	public string? Priezastis { get; set; }
+	public int? Priezastis { get; set; }
 	/// <summary>Taikomasis veiksmas</summary>
-	public int Veiksmas { get; set; }
+	public string? Veiksmas { get; set; }
 	/// <summary>Taikomojo veiksmo pradžia</summary>
 	public DateOnly Pradzia { get; set; }
 	/// <summary>Taikomojo veiksmo pabaiga</summary>
@@ -453,3 +453,38 @@ public class DelegavimasSet {
 	/// <summary>Administratoriaus teisė</summary>
 	public bool Admin { get; set; }
 }
+
+
+/// <summary>Deklaracijos rodiklių suvedimo reikšmės</summary>
+public class RodiklioSuvedimas {
+	/// <summary>Rodiklio reikšmės ID</summary><example>1000</example>
+	public long ID { get; set; }
+	/// <summary>Rodiklio reikšmių suvedimo ID</summary><example>200</example>
+	public long Suvedimas { get; set; }
+	/// <summary>Rodiklio Kodas</summary><example>CAS_11-22-3</example>
+	public string? Kodas { get; set; }
+	/// <summary>Suvesto rodiklio data</summary><example>2024-01-02</example>
+	public DateOnly Data { get; set; }
+	/// <summary>Suvesto rodiklio reikšmė</summary><example>1.23</example>
+	public double Reiksme { get; set; }
+}
+
+/// <summary>Reikšmių suvedimo rezultatas</summary>
+public class ReiksmiuSuvedimasResult {
+	/// <summary>Deklaracijos ID</summary>
+	public int Deklaracija { get; set; }
+	/// <summary>Suvedimo ID</summary>
+	public long Suvedimas { get; set; }
+	/// <summary>Suvestos reikšmės</summary>
+	public long Reiksmes { get; set; }
+}
+
+/// <summary>Reikšmių trynimo rezultatas</summary>
+public class ReiksmiuTrynimasResult {
+	
+	/// <summary>Deklaracijos ID</summary>
+	public int Deklaracija { get; set; }
+	/// <summary>Istrintų reikšmių skaičius</summary>
+	public long Istrinta { get; set; }
+}
+

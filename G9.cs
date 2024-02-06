@@ -31,8 +31,6 @@ app.MapGet("/api/neatitiktys/{deklaracija}/{tipas}",Deklaravimas.GetOne).Swagger
 app.MapPost("/api/deklaruoti/{deklaracija}",Deklaravimas.Submit).Swagger("","Pateikti deklaraciją").Response<G9.Models.Deklaravimas>(200,422,401,403,404).RequireRole();
 //app.MapPost("/api/deklaruoti/{deklaracija}/{tipas}",Deklaravimas.UpdateOne).Swagger("","Atnaujinti delkaracijos neatitiktis").Response<G9.Models.Deklaravimas>(200,422,401,403,404).RequireRole();
 
-
-
 // Veiklos
 app.MapGet("/api/veiklos",Veiklos.Get).Swagger("","Gaunamos prisijungusio vartotojo veiklos ir deklaruojami metai").Response<G9.Models.Veiklos>(200,401,403).RequireRole();
 
@@ -44,10 +42,11 @@ app.MapGet("/api/reiksmes/{deklaracija}",Reiksmes.Get).Swagger("","Gauti deklaru
 app.MapPost("/api/reiksmes/{deklaracija}",Reiksmes.Set).Swagger("","Įrašomos rodiklių reikšmės").Produces(204).Errors(422,401,403,404).RequireRole();
 app.MapDelete("/api/reiksmes/{deklaracija}",Reiksmes.Del).Swagger("","Pašalinti rodiklių reikšmes deklaracijoje").Produces(204).Errors(422,401,403,404).RequireRole();
 
+
 //API suvedimas
-app.MapGet("/api/rodikliai/{deklaracija}",Reiksmes.Get).Swagger("","Gauti visas deklaracijos rodiklių reikšmes").RequireAPIKey();
-app.MapPost("/api/rodikliai/{deklaracija}",Reiksmes.Set).Swagger("","Įvesti deklaracijos rodiklių reikšmes").RequireAPIKey();
-app.MapDelete("/api/rodikliai/{deklaracija}",Reiksmes.Del).Swagger("","pašalinti deklaracijos rodiklių reikšmes").RequireAPIKey();
+app.MapGet("/api/v1/{deklaracija}",IntegracijosAPIv1.Get).Swagger("","Gauti visas deklaracijos rodiklių reikšmes").Response<G9.Models.ArrayModel<G9.Models.RodiklioSuvedimas>>(200,401,403,404).RequireAPIKey();
+app.MapPost("/api/v1/{deklaracija}",IntegracijosAPIv1.Set).Swagger("","Įvesti deklaracijos rodiklių reikšmes").Response<G9.Models.ReiksmiuSuvedimasResult>(200,422,401,403).RequireAPIKey();
+app.MapDelete("/api/v1/{deklaracija}",IntegracijosAPIv1.Del).Swagger("","Pašalinti deklaracijos rodiklio reikšmę/suvedimo reikšmes").Response<G9.Models.ReiksmiuTrynimasResult>(200,401,403).RequireAPIKey();
 
 
 app.Run();

@@ -93,3 +93,117 @@ public static class Reiksmes {
 		} else Error.E404(ctx,true);
  	}
 }
+
+
+
+
+/// <summary>
+/// Rodiklių suvedimo automatizavimo API
+/// </summary>
+public class IntegracijosAPIv1 {
+
+	private static CachedLookup<string,Rodiklis> RodikliaiList { get; } = new ("Rodikliai", (dict)=>{
+		using var db = new DBExec("SELECT rod_id,rod_grupe,rod_kodas,rod_rodiklis FROM public.rodikliai");
+		using var rdr = db.GetReader();
+		while(rdr.Read()){
+			var kod = rdr.GetStringN(2);
+			if(!string.IsNullOrEmpty(kod))
+				dict[kod]=new(){ ID=rdr.GetIntN(0)??0, Grupe=rdr.GetIntN(1)??0, Kodas=kod, Pavadinimas=rdr.GetStringN(3) };
+		}
+	});
+
+
+
+	/// <summary>Gauti visas suvestas deklaracijos rodiklių reikšmes</summary>
+	/// <param name="ctx"></param><param name="ct"></param>
+	/// <param name="deklaracija">Deklaracijos ID</param>
+	/// <param name="rodiklis">Rodiklio kodas</param>
+	/// <returns></returns>
+	public static async Task Get(HttpContext ctx, int deklaracija, CancellationToken ct, [FromQuery] string? rodiklis=null){ 
+		if(ApiCheck(ctx, deklaracija) is not null){
+			if(string.IsNullOrEmpty(rodiklis)){
+				ctx.Response.ContentType="application/json";			
+				var options = new JsonWriterOptions{ Indented = false }; //todo: if debug
+				using var writer = new Utf8JsonWriter(ctx.Response.BodyWriter, options);
+				await DBExtensions.PrintArray("SELECT \"ID\",\"Suvedimas\",\"Kodas\",\"Data\",\"Reiksme\" FROM public.v_rodikliai_suvedimas WHERE \"Deklaracija\"=@deklar;", new(("@deklar",deklaracija)), writer, ct);
+				await writer.FlushAsync(ct);
+			} else {
+				if(RodikliaiList.Refresh().TryGetValue(rodiklis, out var rdk)){
+					ctx.Response.ContentType="application/json";			
+					var options = new JsonWriterOptions{ Indented = false }; //todo: if debug
+					using var writer = new Utf8JsonWriter(ctx.Response.BodyWriter, options);
+					await DBExtensions.PrintArray("SELECT rks_id \"ID\", rks_suvedimas \"Suvedimas\", @code \"Kodas\", rks_date \"Data\", rks_reiksme \"Reiksme\" FROM public.reiksmes WHERE rks_deklar=@deklar and rks_rodiklis=@id", 
+						new(("@deklar",deklaracija),("@id",rdk.ID),("@code",rdk.Kodas)), writer, ct);
+					await writer.FlushAsync(ct);
+				} else Error.E404(ctx,true);
+			}
+		}
+	}
+
+	/// <summary>Įvesti rodiklių reikšmes deklaracijai</summary>
+	/// <param name="ctx"></param><param name="ct"></param>
+	/// <param name="deklaracija"> Deklaracijos ID</param>
+	/// <param name="data">Rodilių duomenys</param>
+	/// <returns></returns>
+	public static async Task Set(HttpContext ctx, int deklaracija, List<object[]> data, CancellationToken ct) {
+		var api = ApiCheck(ctx, deklaracija);
+		if(api is not null){
+			var rdl = RodikliaiList.Refresh();
+			using var db = new DBBatch("reiksmes", ["rks_rodiklis","rks_date","rks_reiksme","rks_deklar","rks_suvedimas","rks_user"]);
+			
+			var sk = await db.ExecuteScalar<long>("INSERT INTO public.suvedimai (rsv_deklar,rsv_type,rsv_user) VALUES (@deklar,'3',@user) RETURNING rsv_id;",ct, ("@deklar",deklaracija), ("@user",api.ID));
+			
+			var cnt = data.Count;
+			for(var i=0; i<cnt ; i++){
+				var j = data[i];
+				var rod = j[0]?.ToString();
+				if(!string.IsNullOrWhiteSpace(rod)){
+					if(rdl.TryGetValue(rod,out var rdk)){
+						if(DateOnly.TryParse(j[1]?.ToString(), out var dte)){
+							if(dte.Year==api.Metai){
+								//check date>now;
+								if(double.TryParse(j[2]?.ToString(), out var rks)){
+									await db.Add(ct, rdk.ID,dte,rks,deklaracija,sk,api.ID);
+								} else { Error.E422(ctx,true,$"Reikšmė negalima {i+1}: {rod}, {dte}, {j[2]}"); return; }
+							} else { Error.E422(ctx,true,$"Neteisingi deklaravimo metai {i+1}: {rod}, {dte}, {j[2]}"); return; }
+						} else { Error.E422(ctx,true,$"Neteisinga {i+1}: {rod}, {j[1]}, {j[2]}"); return; }
+					} else { Error.E422(ctx,true,$"Rodiklis nerastas {i+1}: {j[0]}, {j[1]}, {j[2]}"); return; }
+				}
+			}
+			if(db.Total>0) { 
+				await db.Commit(ct,true);
+				//TODO: Log
+			}
+			ctx.Response.ContentType="application/json";	
+			await ctx.Response.WriteAsJsonAsync(new ReiksmiuSuvedimasResult(){ Deklaracija=deklaracija, Reiksmes=db.Total, Suvedimas=sk},ct);
+		}
+	}
+
+	/// <summary>Ištrinti deklaracijos rodiklio reikšmę</summary>
+	/// <param name="ctx"></param><param name="ct"></param><param name="deklaracija">Deklaracijos ID</param><param name="rodiklis">Rodiklio reikšmės ID</param><param name="suvedimas">Reikšmių suvedimo ID</param><returns></returns>
+	public static async Task Del(HttpContext ctx, int deklaracija, CancellationToken ct, long? rodiklis=null, long? suvedimas=null) {
+		var api = ApiCheck(ctx, deklaracija);
+		if(api is not null){
+			int del = 0;
+			lock(api){
+				if(ct.IsCancellationRequested) return;
+				if(rodiklis>0){					
+					del = new DBExec("DELETE FROM public.reiksmes WHERE rks_deklar=@deklar and rks_id=@id",("@deklar",deklaracija),("@id",rodiklis)).Execute();
+				}
+				else if(suvedimas>0){
+					del = new DBExec("DELETE FROM public.reiksmes WHERE rks_deklar=@deklar and rks_suvedimas=@id",("@deklar",deklaracija),("@id",suvedimas)).Execute();
+				}
+				else { Error.E404(ctx,true); return;}
+				Thread.Sleep(200);
+			}
+			await ctx.Response.WriteAsJsonAsync(new ReiksmiuTrynimasResult(){ Deklaracija=deklaracija, Istrinta=del},ct);
+			//TODO: Log
+		}
+	}
+
+	private static ApiKey? ApiCheck(HttpContext ctx, long deklaracija){
+		var api = ctx.GetAPI();
+		if(api is not null && api.Deklaracija==deklaracija) return api;
+		Error.E403(ctx,true); return null;
+	}
+}

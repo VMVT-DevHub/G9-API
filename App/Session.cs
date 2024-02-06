@@ -71,24 +71,34 @@ public static class Session {
 		//TODO: Clean sessions
 	}
 
+
+	private static int ApiAuthClean { get; set; }
+	private static int ApiAuthCleanMax { get; set; }
 	/// <summary>API autorizacijos validavimas</summary>
 	/// <param name="ctx"></param>
 	/// <returns>T/F jei API raktas egzidtuoja</returns>
 	public static bool GetApiAuth(this HttpContext ctx){
+		var now = DateTime.UtcNow;
+		ApiAuthClean++;
+		if(ApiAuthClean>ApiAuthCleanMax) {
+			ApiAuthCleanMax=Config.GetInt("Session","ApiAuthClean",100);
+			ApiAuthClean = 0; var cln = new List<string>(); 
+			foreach(var i in ApiCache) if(i.Value.Refresh<now) cln.Add(i.Key);
+			foreach (var i in cln) ApiCache.TryRemove(i, out _);
+		}
 		if(ctx.Request.Headers.TryGetValue("X-API-Key", out var k)){
 			string key = k.FirstOrDefault()??"";
 			if(key.Length>0){
-				var now = DateTime.UtcNow;
 				if(ApiCache.TryGetValue(key, out var apk) && apk.Refresh>now){
 					if(apk.Key is null) ApiCheck(ctx,key);
 					else { ctx.Items["ApiKey"]=apk; return true; }
 				} else {
 					ApiCheck(ctx,key);
 					var rfr = now.AddSeconds(Config.GetInt("Session","ApiCache",60));
-					using var db = new DBExec("SELECT \"ID\",\"Deklar\",\"Exp\" FROM app.api_auth(@key);", "@key", key.FirstOrDefault());
+					using var db = new DBExec("SELECT \"ID\",\"Deklar\",\"Exp\",\"Metai\" FROM app.api_auth(@key);", "@key", key);
 					using var rdr = db.GetReader();
 					if(rdr.Read()){
-						ApiCache[key] = new(){ ID=rdr.GetGuid(0), Key=key, Refresh=rfr, Deklaracija=rdr.GetIntN(1)??0, Expire=DateOnly.FromDateTime(rdr.GetDateTimeN(2)??now) };
+						ctx.Items["ApiKey"] = ApiCache[key] = new(){ ID=rdr.GetGuid(0), Key=key, Refresh=rfr, Deklaracija=rdr.GetIntN(1)??0, Expire=DateOnly.FromDateTime(rdr.GetDateTimeN(2)??now) ,Metai=rdr.GetIntN(3)??2000 };
 						return true;
 					}
 					ApiCache[key]= new(){ Key=null, Refresh=rfr };
@@ -100,6 +110,7 @@ public static class Session {
 	}
 
 	private static int ApiCacheClean { get; set; }
+	private static int ApiCacheCleanMax { get; set; }
 	private static void ApiCheck(HttpContext ctx, string key){
 		var ip = ctx.GetIP(); var now=DateTime.UtcNow;
 		var rls = now.AddSeconds(Config.GetInt("Session","ApiRelease",30));
@@ -111,7 +122,8 @@ public static class Session {
 		} 
 		else { ApiRequests[ip] = new(){ Count=1, IP=ip, LastKey=key, Release=rls }; }
 		ApiCacheClean++;
-		if(ApiCacheClean>Config.GetInt("Session","ApiCacheClean",100)){
+		if(ApiCacheClean>ApiCacheCleanMax){
+			ApiCacheCleanMax=Config.GetInt("Session","ApiCacheClean",100);
 			ApiCacheClean = 0; var cln = new List<string>(); 
 			foreach(var i in ApiRequests) if(i.Value.Release<now) cln.Add(i.Key);
 			foreach (var i in cln) ApiRequests.TryRemove(i, out _);
@@ -201,6 +213,9 @@ public class ApiKey {
 	public int Deklaracija { get; set; }
 	/// <summary>Rakto galiojimo laikas</summary>
 	public DateOnly Expire { get; set; }
+	/// <summary>Deklaracijos metai</summary>
+	public int Metai { get; set; }
+	
 	/// <summary>Rakto "cache' atnaujinimo laikas</summary>
 	public DateTime Refresh { get; set; }
 }
