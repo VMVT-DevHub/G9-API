@@ -1,3 +1,5 @@
+using App;
+
 namespace G9.Models;
 
 /// <summary>Deklaruojamų metų sąrašas veikloms pagal ūkio subjektus</summary>
@@ -414,7 +416,7 @@ public class Vartotojas {
 }
 
 
-/// <summary>Vandenvietės ir jų delegavimas</summary>
+/// <summary>GVTS ir jų delegavimas</summary>
 public class Delegavimas{
 	/// <summary>Geriamo vandens tiekimo sistemos</summary>
 	public ArrayModel<GVTS>? GVTS { get; set; }
@@ -488,3 +490,69 @@ public class ReiksmiuTrynimasResult {
 	public long Istrinta { get; set; }
 }
 
+
+
+
+/// <summary>GVTS API prisijungimų raktai</summary>
+public class ApiKeys{
+	/// <summary>Geriamo vandens tiekimo sistemos deklaracijos</summary>
+	public ArrayModelA<APIDeklar>? Deklaracijos { get; set; }
+	/// <summary>Deleguoti asmenys</summary>
+	public ArrayModel<APIKey>? Raktai { get; set; }
+}
+
+/// <summary>Autorizacijos rakto struktūros modelis</summary>
+public class APIKey {
+	/// <summary>API rakto identifikatorius</summary>
+	public Guid RaktoID { get; set; }
+	/// <summary>Deklaracijos ID</summary>
+	public int Deklaracija { get; set; } 
+	/// <summary>Geriamo vandens tiekimo sistemos ID</summary>
+	public long GVTS { get; set; }
+	/// <summary>Rakto galiojimo pabaigos data</summary>
+	public DateOnly GaliojaIki { get; set; }
+	/// <summary>Rakto sukūrimo data</summary>
+	public DateTime Sukurtas { get; set; }
+	/// <summary>Vartotojas sukūręs prisijungimo raktą</summary>
+	public string? Autorius { get; set; }
+}
+
+/// <summary>GVTS deklaracijos modelis autorizacijos raktui</summary>
+public class APIDeklar {
+	/// <summary>Deklaracija</summary>
+	public long ID { get; set; }
+	/// <summary>Deklaruojami metai</summary>
+	public int Metai { get; set; }
+	/// <summary>Stebėsenų ID</summary>
+	public int Stebesenos { get; set; }
+	/// <summary>Deklaracijos statusas</summary>
+	public int Statusas { get; set; }
+}
+
+/// <summary>Deklaracijos rakto sukūrimas</summary>
+public class APIKeyAdd {
+	/// <summary>Deklaracijos ID</summary>
+	public int Deklaracija { get; set; }
+	/// <summary>Maksimali APIRakto galiojimo data</summary>
+	public DateOnly? GaliojaIki { get; set; }
+}
+
+/// <summary>Deklaracijos rakto sukūrimo atsakas</summary>
+public class APIKeyData {
+	/// <summary>API autorizacijos rakto ID</summary>
+	public Guid? RaktoID { get; set; }
+	/// <summary>API autorizacijos raktas</summary>
+	public string? Raktas { get; set; }
+	/// <summary>Deklaracijos ID</summary>
+	public int Deklaracija { get; set; }
+	/// <summary>Maksimali APIRakto galiojimo data</summary>
+	public long GVTS { get; set; }
+	/// <summary>Prieigos galiojimo pabaigos data</summary>
+	public DateOnly? GaliojaIki { get; set; }
+}
+
+/// <summary>Autorizacijos rakto ištrynimo atsakas</summary>
+public class APIKeyDel {
+	/// <summary></summary>
+	public bool Ištrinta { get; set; }
+}

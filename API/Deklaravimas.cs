@@ -103,7 +103,7 @@ public static class Deklaravimas {
 
 	private static readonly string SqlUpdateTrukumas = "UPDATE public.valid_trukumas SET vld_tvirtinti=@tvrt,vld_kitas=@kitas,vld_pastabos=@pstb,vld_user=@usr,vld_date_modif=timezone('utc', now()) WHERE vld_id=@id and vld_deklar=@deklar;";
 	private static readonly string SqlUpdateKartojasi = "UPDATE public.valid_kartojasi SET vld_tvirtinti=@tvrt,vld_pastabos=@pstb,vld_user=@usr,vld_date_modif=timezone('utc', now()) WHERE vld_id=@id and vld_deklar=@deklar;";
-	private static readonly string SqlUpdateVirsija = "UPDATE public.valid_virsija SET vld_tvirtinti=@tvrt,vld_pastabos=@pstb,vld_user=@usr,vld_date_modif=timezone('utc', now()),vld_nereiksm=@nereik,vld_nereiksm_apras=@nereikapras,vld_zmones=@zmones,vld_loq_reiksme=@loqr,vld_loq_verte=@loqv,vld_statusas=@stat,vld_tipas=@tipas,vld_priez=@tspriez,vld_veiksmas=@tsveiksm,vld_pradzia=@tsprad,vld_pabaiga=@pspab WHERE vld_deklar=@deklar and vld_id=@id;";
+	private static readonly string SqlUpdateVirsija = "UPDATE public.valid_virsija SET vld_tvirtinti=@tvrt,vld_pastabos=@pstb,vld_user=@usr,vld_date_modif=timezone('utc', now()),vld_nereiksm=@nereik,vld_nereiksm_apras=@nereikapras,vld_zmones=@zmones,vld_loq_reiksme=@loqr,vld_loq_verte=@loqv,vld_statusas=@stat,vld_tipas=@tipas,vld_priez=@tspriez,vld_veiksmas=@tsveiksm,vld_pradzia=@tsprad,vld_pabaiga=@tspab WHERE vld_deklar=@deklar and vld_id=@id;";
 	private static async Task<Err> Save(HttpContext ctx, int deklaracija, NeatitiktysSet data, CancellationToken ct){
 		var usr = ctx.GetUser()?.ID; var err = new Err();
 		using var db = new DBExec(""){ UseTransaction=true };
@@ -143,7 +143,7 @@ public static class Deklaravimas {
 							else if(!(i.Zmones>0)) msg="Neįvestas paveiktų žmonių skaičius";
 							else if(!tps.ContainsKey(i.Tipas?.ToString()??"")) msg="Nepasirinktas mėginių ėmimo vietos tipas";
 							else if(!sts.ContainsKey(i.Statusas?.ToString()??"")) msg="Nepasirinktas stebėjimo statusas";
-						} else if(i.Pastabos?.Length<5) { msg="Neįvesta arba per trumpa pastaba"; }
+						}
 
 						if(msg is null){
 							if(!vks.ContainsKey(i.Veiksmas??"")) msg="Nepasirinktas viršijimo taisomasis veiksmas";
@@ -158,7 +158,7 @@ public static class Deklaravimas {
 					param.Data["@id"]=i.ID; param.Data["@tvrt"]=i.Patvirtinta; param.Data["@pstb"]=i.Pastabos;
 					param.Data["@nereik"]=i.Nereiksmingas; param.Data["@nereikapras"]=i.NereiksmApras; param.Data["@zmones"]=i.Zmones; 
 					param.Data["@loqr"]=i.LOQReiksme; param.Data["@loqv"]=i.LOQVerte; param.Data["@stat"]=i.Statusas; param.Data["@tipas"]=i.Tipas;
-					param.Data["@tsveiksm"]=i.Veiksmas; param.Data["@tspriez"]=i.Priezastis; param.Data["@tsprad"]=i.Pradzia; param.Data["@pspab"]=i.Pabaiga;
+					param.Data["@tsveiksm"]=i.Veiksmas; param.Data["@tspriez"]=i.Priezastis; param.Data["@tsprad"]=i.Pradzia; param.Data["@tspab"]=i.Pabaiga;
 					await db.Execute(SqlUpdateVirsija,param,ct);
 				}
 			}

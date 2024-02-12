@@ -1,11 +1,15 @@
 using System.Text.Json;
 using App.Auth;
 using G9.Models;
+using Microsoft.AspNetCore.Mvc;
 
 namespace App.API;
 
-/// <summary>Vartotojo teisių delegavimas</summary>
-public static class Delegavimas {
+/// <summary>Vartotojo teisės ir prieigos</summary>
+public static class Prieigos {
+	private static CachedLookup PrieigosApiVal { get; } = new CachedLookup("APIKey", ("Stebesenos","lkp_stebesenos"), ("Statusas","lkp_statusas"));
+
+
 	/// <summary>Gauti administruojamų GVTS deleguotus asmenis</summary>
 	/// <param name="ctx"></param><param name="ct"></param><returns></returns>
 	public static async Task Get(HttpContext ctx,CancellationToken ct){
@@ -76,4 +80,78 @@ public static class Delegavimas {
 		}
 		else Error.E403(ctx,true);
 	}
+
+
+
+
+	/// <summary>Gauti visus API raktus priskirtus GVTS</summary>
+	/// <param name="ctx"></param>
+	/// <param name="gvts">Geriamo vandens tiekimo sistema</param>
+	/// <param name="ct"></param>
+	/// <returns></returns>
+	public static async Task GetKeys(HttpContext ctx, long gvts, CancellationToken ct) {
+		var usr = ctx.GetUser();
+		if(usr?.Admin?.Contains(gvts) == true) {
+			ctx.Response.ContentType="application/json";
+			var options = new JsonWriterOptions{ Indented = false }; //todo: if debug
+			using var writer = new Utf8JsonWriter(ctx.Response.BodyWriter, options);
+			writer.WriteStartObject();			
+			var prm = new DBParams(("@gvts", gvts));
+			writer.WritePropertyName("Deklaracijos");
+			await DBExtensions.PrintArray("SELECT \"ID\",\"Metai\",\"Stebesenos\",\"Statusas\" FROM public.v_deklar WHERE \"GVTS\"=@gvts and \"Statusas\" in (1,2);", prm, writer, ct, PrieigosApiVal);
+			writer.WritePropertyName("Raktai");
+			await DBExtensions.PrintArray("SELECT * FROM public.v_deklar_keys WHERE \"GVTS\"=@gvts;", prm, writer, ct);
+			writer.WriteEndObject();
+			await writer.FlushAsync(ct);
+		}
+		else Error.E403(ctx,true);
+	}
+
+	/// <summary>Trinti API raktą</summary>
+	/// <param name="ctx"></param>
+	/// <param name="gvts">Geriamo vandens tiekimo sistema</param>
+	/// <param name="deklaracija">Deklaracijos ID</param>
+	/// <param name="id">API Rakto ID</param>
+	/// <param name="ct"></param>
+	/// <returns></returns>
+	public static async Task DelKey(HttpContext ctx, long gvts, int deklaracija, Guid id, CancellationToken ct) {
+		var usr = ctx.GetUser();
+		if(usr?.Admin?.Contains(gvts) == true) {
+			var ret = await new DBExec("SELECT app.api_key_del(@id,@gvts,@deklar)",("@id",id),("@gvts",gvts),("@deklar",deklaracija)).ExecuteScalar<bool>(ct);
+			ctx.Response.ContentType="application/json";
+			await ctx.Response.WriteAsJsonAsync(new APIKeyDel(){ Ištrinta=ret }, cancellationToken: ct);
+		}
+		else Error.E403(ctx,true);
+	}
+
+
+	/// <summary>Trinti API raktą</summary>
+	/// <param name="ctx"></param>
+	/// <param name="gvts">Geriamo vandens tiekimo sistema</param>
+	/// <param name="dt">Rakto informacija</param>
+	/// <param name="ct"></param>
+	/// <returns></returns>
+	public static async Task AddKey(HttpContext ctx, long gvts, [FromBody] APIKeyAdd dt, CancellationToken ct) {
+		var usr = ctx.GetUser();
+		if(usr?.Admin?.Contains(gvts) == true) {
+			var key = Session.RandomStr(Config.GetInt("APIKey","Length",64));
+			
+			var date = DateOnly.FromDateTime(DateTime.UtcNow);
+			if(dt.GaliojaIki<date){ dt.GaliojaIki=date.AddDays(1); }
+			else {
+				date=date.AddDays(Config.GetInt("APIKey","MaxDate",420));
+				if(dt.GaliojaIki is null || dt.GaliojaIki > date) dt.GaliojaIki=date;
+			}
+
+			if(dt.GaliojaIki>date) dt.GaliojaIki=date;
+			using var db = new DBExec("SELECT id,key,deklar,exp FROM app.api_key_add(@key,@gvts,@deklar,@exp,@usr)",("@key",key),("@gvts",gvts),("@deklar",dt.Deklaracija),("@exp",dt.GaliojaIki),("@usr",usr.ID));
+			using var rdr = await db.GetReader(ct);
+			ctx.Response.ContentType="application/json";
+			if(await rdr.ReadAsync(ct)){
+				await ctx.Response.WriteAsJsonAsync(new APIKeyData(){ RaktoID=rdr.GetGuid(0), Raktas=rdr.GetStringN(1), Deklaracija=rdr.GetIntN(2)??0, GaliojaIki=DateOnly.FromDateTime(rdr.GetDateTimeN(3)??DateTime.Today), GVTS=gvts },ct);
+			} else Error.E422(ctx,true,"API autorizacijos raktas nabuvo sukirtas");
+		}
+		else Error.E403(ctx,true);
+	}
+
 }

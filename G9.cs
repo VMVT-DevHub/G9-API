@@ -13,13 +13,17 @@ app.MapGet("/api/user",Auth.Get).Swagger("","Informacija apie prisijungusį vart
 #endif
 
 // Teisių delegavimas
-app.MapGet("/api/deleg",Delegavimas.Get).Swagger("","Gauti visas prisijungusio asmens administruojamų GVTS sąrašą.").Response<G9.Models.Delegavimas>(200,422,401,403,404).RequireRole();
-app.MapPost("/api/deleg/{gvts}",Delegavimas.Set).Swagger("","Pridėti deleguojamą asmenį").Produces(204).Errors(422,401,403,404).RequireRole();
-app.MapDelete("/api/deleg/{gvts}/{user}",Delegavimas.Del).Swagger("","Trinti deleguojamą asmenį").Produces(204).Errors(422,401,403,404).RequireRole();
+app.MapGet("/api/deleg",Prieigos.Get).Swagger("","Gauti visas prisijungusio asmens administruojamų GVTS sąrašą.").Response<G9.Models.Delegavimas>(200,422,401,403,404).RequireRole();
+app.MapPost("/api/deleg/{gvts}",Prieigos.Set).Swagger("","Pridėti deleguojamą asmenį").Produces(204).Errors(422,401,403,404).RequireRole();
+app.MapDelete("/api/deleg/{gvts}/{user}",Prieigos.Del).Swagger("","Trinti deleguojamą asmenį").Produces(204).Errors(422,401,403,404).RequireRole();
+
+app.MapGet("/api/keys/{gvts}",Prieigos.GetKeys).Swagger("","Gauti visus integracijų prieigos raktus").Response<G9.Models.ApiKeys>(200,401,403,404).RequireRole();
+app.MapPost("/api/keys/{gvts}",Prieigos.AddKey).Swagger("","Sukurti naują prieigos raktą").Response<bool>(200,401,403,404).RequireRole();
+app.MapDelete("/api/keys/{gvts}/{deklaracija}/{id}",Prieigos.DelKey).Swagger("","Ištrinti prieigos raktą").Response<bool>(200,401,403,404).RequireRole();
 
 // Deklaracijos
-app.MapGet("/api/deklaracijos/{gvts}",Deklaracija.GetAll).Swagger("","Gaunamos visos VGTS deklaracijos").Response<G9.Models.DeklaracijaGet>(200,401,403,404).RequireRole();
-app.MapGet("/api/deklaracijos/{gvts}/{metai}",Deklaracija.GetYear).Swagger("","Gaunamos VGTS deklaracijos metams").Response<G9.Models.DeklaracijaGet>(200,401,403,404).RequireRole();
+app.MapGet("/api/deklaracijos/{gvts}",Deklaracija.GetAll).Swagger("","Gaunamos visos GVTS deklaracijos").Response<G9.Models.DeklaracijaGet>(200,401,403,404).RequireRole();
+app.MapGet("/api/deklaracijos/{gvts}/{metai}",Deklaracija.GetYear).Swagger("","Gaunamos GVTS deklaracijos metams").Response<G9.Models.DeklaracijaGet>(200,401,403,404).RequireRole();
 
 app.MapGet("/api/deklaracija/{deklaracija}",Deklaracija.GetOne).Swagger("","Deklaracijos duomenys").Response<G9.Models.DeklaracijaGet>(200,401,403,404).RequireRole();
 app.MapPost("/api/deklaracija/{deklaracija}",Deklaracija.Set).Swagger("","Daklaracijos duomenų įvedimas").Response<G9.Models.DeklaracijaGet>(200,422,401,403,404).RequireRole();
