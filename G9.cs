@@ -26,6 +26,7 @@ app.MapGet("/api/deklaracijos/{gvts}",Deklaracija.GetAll).Swagger("","Gaunamos v
 app.MapGet("/api/deklaracijos/{gvts}/{metai}",Deklaracija.GetYear).Swagger("","Gaunamos GVTS deklaracijos metams").Response<G9.Models.DeklaracijaGet>(200,401,403,404).RequireRole();
 
 app.MapGet("/api/deklaracija/{deklaracija}",Deklaracija.GetOne).Swagger("","Deklaracijos duomenys").Response<G9.Models.DeklaracijaGet>(200,401,403,404).RequireRole();
+app.MapGet("/api/deklaracija/{deklaracija}/suvedimai",Deklaracija.GetSuvesti).Swagger("","Bazinis suvedamų rodiklių sąrašas").Response<G9.Models.ArrayModel<G9.Models.ReikSuvedimai>>(200,401,403,404).RequireRole();
 app.MapPost("/api/deklaracija/{deklaracija}",Deklaracija.Set).Swagger("","Daklaracijos duomenų įvedimas").Response<G9.Models.DeklaracijaGet>(200,422,401,403,404).RequireRole();
 
 // Deklaravimas
@@ -48,9 +49,9 @@ app.MapDelete("/api/reiksmes/{deklaracija}",Reiksmes.Del).Swagger("","Pašalinti
 
 
 //API suvedimas
-app.MapGet("/api/v1/{deklaracija}",IntegracijosAPIv1.Get).Swagger("","Gauti visas deklaracijos rodiklių reikšmes").Response<G9.Models.ArrayModel<G9.Models.RodiklioSuvedimas>>(200,401,403,404).RequireAPIKey();
-app.MapPost("/api/v1/{deklaracija}",IntegracijosAPIv1.Set).Swagger("","Įvesti deklaracijos rodiklių reikšmes").Response<G9.Models.ReiksmiuSuvedimasResult>(200,422,401,403).RequireAPIKey();
-app.MapDelete("/api/v1/{deklaracija}",IntegracijosAPIv1.Del).Swagger("","Pašalinti deklaracijos rodiklio reikšmę/suvedimo reikšmes").Response<G9.Models.ReiksmiuTrynimasResult>(200,401,403).RequireAPIKey();
+app.MapGet("/api/v1/{deklaracija}",IntegracijosAPI_v1.Get).Swagger("","Gauti visas deklaracijos rodiklių reikšmes").Response<G9.Models.ArrayModel<G9.Models.RodiklioSuvedimas>>(200,401,403,404).RequireAPIKey();
+app.MapPost("/api/v1/{deklaracija}",IntegracijosAPI_v1.Set).Swagger("","Įvesti deklaracijos rodiklių reikšmes").Response<G9.Models.ReiksmiuSuvedimasResult>(200,422,401,403).RequireAPIKey();
+app.MapDelete("/api/v1/{deklaracija}",IntegracijosAPI_v1.Del).Swagger("","Pašalinti deklaracijos rodiklio reikšmę/suvedimo reikšmes").Response<G9.Models.ReiksmiuTrynimasResult>(200,401,403).RequireAPIKey();
 
 
 app.Run();

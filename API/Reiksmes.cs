@@ -100,7 +100,7 @@ public static class Reiksmes {
 /// <summary>
 /// Rodiklių suvedimo automatizavimo API
 /// </summary>
-public class IntegracijosAPIv1 {
+public class IntegracijosAPI_v1 {
 
 	private static CachedLookup<string,Rodiklis> RodikliaiList { get; } = new ("Rodikliai", (dict)=>{
 		using var db = new DBExec("SELECT rod_id,rod_grupe,rod_kodas,rod_rodiklis FROM public.rodikliai");

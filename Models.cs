@@ -384,6 +384,15 @@ public class DeklarValidVirsijimas{
 }
 
 
+/// <summary>Reikalaujamas suvedimų rodiklių kiekis deklaracijai</summary>
+public class ReikSuvedimai {
+	/// <summary>Rodiklio identifikatorius</summary>
+	public int Rodiklis { get; set; }
+	/// <summary>Reikiamas tyrimų skaičius</summary>
+	public int Reikia { get; set; }
+}
+
+
 
 /// <summary>Prisijungusio vartotojo informacija</summary>
 public class Vartotojas {

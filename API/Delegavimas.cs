@@ -125,7 +125,7 @@ public static class Prieigos {
 	}
 
 
-	/// <summary>Trinti API raktą</summary>
+	/// <summary>Sukurti API raktą deklaracijai</summary>
 	/// <param name="ctx"></param>
 	/// <param name="gvts">Geriamo vandens tiekimo sistema</param>
 	/// <param name="dt">Rakto informacija</param>

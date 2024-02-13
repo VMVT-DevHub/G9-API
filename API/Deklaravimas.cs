@@ -100,7 +100,7 @@ public static class Deklaravimas {
 		if(await Validate(ctx,deklaracija,ct)) await PrintDeklar(ctx,deklaracija,ct,tipas);
 	}
 
-
+	
 	private static readonly string SqlUpdateTrukumas = "UPDATE public.valid_trukumas SET vld_tvirtinti=@tvrt,vld_kitas=@kitas,vld_pastabos=@pstb,vld_user=@usr,vld_date_modif=timezone('utc', now()) WHERE vld_id=@id and vld_deklar=@deklar;";
 	private static readonly string SqlUpdateKartojasi = "UPDATE public.valid_kartojasi SET vld_tvirtinti=@tvrt,vld_pastabos=@pstb,vld_user=@usr,vld_date_modif=timezone('utc', now()) WHERE vld_id=@id and vld_deklar=@deklar;";
 	private static readonly string SqlUpdateVirsija = "UPDATE public.valid_virsija SET vld_tvirtinti=@tvrt,vld_pastabos=@pstb,vld_user=@usr,vld_date_modif=timezone('utc', now()),vld_nereiksm=@nereik,vld_nereiksm_apras=@nereikapras,vld_zmones=@zmones,vld_loq_reiksme=@loqr,vld_loq_verte=@loqv,vld_statusas=@stat,vld_tipas=@tipas,vld_priez=@tspriez,vld_veiksmas=@tsveiksm,vld_pradzia=@tsprad,vld_pabaiga=@tspab WHERE vld_deklar=@deklar and vld_id=@id;";
@@ -168,12 +168,15 @@ public static class Deklaravimas {
 	}
 
 
-	private static async Task<bool> Validate(HttpContext ctx, long deklaracija, CancellationToken ct){
+	/// <summary>Tikrinti ar galima deklaruoti</summary>
+	/// <param name="ctx"></param><param name="ct"></param><returns></returns>
+	/// <param name="deklaracija">Deklaracijos ID</param><param name="skipkiek">Praleisti kiekio validaciją</param>
+	public static async Task<bool> Validate(HttpContext ctx, long deklaracija, CancellationToken ct, bool skipkiek=false){
 		using var db = new DBExec("SELECT dkl_gvts, dkl_status, dkl_metai, dkl_kiekis FROM deklaravimas WHERE dkl_id=@id;","@id",deklaracija);
 		using var rdr = await db.GetReader(ct);
 		if(rdr.Read()){
 			if(ctx.GetUser()?.Roles?.Contains(rdr.GetInt64(0)) == true){	
-				if(rdr.GetDoubleN(3)>0) {	
+				if(skipkiek || rdr.GetDoubleN(3)>0) {	
 					var status = rdr.GetInt32(1);
 					if(status==3) Error.E422(ctx,true,$"Ši deklaracija jau pateikta.");
 					else {					
