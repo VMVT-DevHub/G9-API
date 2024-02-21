@@ -13,15 +13,20 @@ app.MapGet("/api/user",Auth.Get).Swagger("","Informacija apie prisijungusį vart
 #endif
 
 // Teisių delegavimas
-app.MapGet("/api/deleg",Delegavimas.Get).Swagger("","Gauti visas prisijungusio asmens administruojamų GVTS sąrašą.").Response<G9.Models.Delegavimas>(200,422,401,403,404).RequireRole();
-app.MapPost("/api/deleg/{gvts}",Delegavimas.Set).Swagger("","Pridėti deleguojamą asmenį").Produces(204).Errors(422,401,403,404).RequireRole();
-app.MapDelete("/api/deleg/{gvts}/{user}",Delegavimas.Del).Swagger("","Trinti deleguojamą asmenį").Produces(204).Errors(422,401,403,404).RequireRole();
+app.MapGet("/api/deleg",Prieigos.Get).Swagger("","Gauti visas prisijungusio asmens administruojamų GVTS sąrašą.").Response<G9.Models.Delegavimas>(200,422,401,403,404).RequireRole();
+app.MapPost("/api/deleg/{gvts}",Prieigos.Set).Swagger("","Pridėti deleguojamą asmenį").Produces(204).Errors(422,401,403,404).RequireRole();
+app.MapDelete("/api/deleg/{gvts}/{user}",Prieigos.Del).Swagger("","Trinti deleguojamą asmenį").Produces(204).Errors(422,401,403,404).RequireRole();
+
+app.MapGet("/api/keys/{gvts}",Prieigos.GetKeys).Swagger("","Gauti visus integracijų prieigos raktus").Response<G9.Models.ApiKeys>(200,401,403,404).RequireRole();
+app.MapPost("/api/keys/{gvts}",Prieigos.AddKey).Swagger("","Sukurti naują prieigos raktą").Response<bool>(200,401,403,404).RequireRole();
+app.MapDelete("/api/keys/{gvts}/{deklaracija}/{id}",Prieigos.DelKey).Swagger("","Ištrinti prieigos raktą").Response<bool>(200,401,403,404).RequireRole();
 
 // Deklaracijos
-app.MapGet("/api/deklaracijos/{gvts}",Deklaracija.GetAll).Swagger("","Gaunamos visos VGTS deklaracijos").Response<G9.Models.DeklaracijaGet>(200,401,403,404).RequireRole();
-app.MapGet("/api/deklaracijos/{gvts}/{metai}",Deklaracija.GetYear).Swagger("","Gaunamos VGTS deklaracijos metams").Response<G9.Models.DeklaracijaGet>(200,401,403,404).RequireRole();
+app.MapGet("/api/deklaracijos/{gvts}",Deklaracija.GetAll).Swagger("","Gaunamos visos GVTS deklaracijos").Response<G9.Models.DeklaracijaGet>(200,401,403,404).RequireRole();
+app.MapGet("/api/deklaracijos/{gvts}/{metai}",Deklaracija.GetYear).Swagger("","Gaunamos GVTS deklaracijos metams").Response<G9.Models.DeklaracijaGet>(200,401,403,404).RequireRole();
 
 app.MapGet("/api/deklaracija/{deklaracija}",Deklaracija.GetOne).Swagger("","Deklaracijos duomenys").Response<G9.Models.DeklaracijaGet>(200,401,403,404).RequireRole();
+app.MapGet("/api/deklaracija/{deklaracija}/suvedimai",Deklaracija.GetSuvesti).Swagger("","Bazinis suvedamų rodiklių sąrašas").Response<G9.Models.ArrayModel<G9.Models.ReikSuvedimai>>(200,401,403,404).RequireRole();
 app.MapPost("/api/deklaracija/{deklaracija}",Deklaracija.Set).Swagger("","Daklaracijos duomenų įvedimas").Response<G9.Models.DeklaracijaGet>(200,422,401,403,404).RequireRole();
 
 // Deklaravimas
@@ -30,8 +35,6 @@ app.MapPost("/api/neatitiktys/{deklaracija}",Deklaravimas.Update).Swagger("","At
 app.MapGet("/api/neatitiktys/{deklaracija}/{tipas}",Deklaravimas.GetOne).Swagger("","Gauti delkaracijos neatitiktis pagal tipą").Response<G9.Models.Neatitiktys>(200,422,401,403,404).RequireRole();
 app.MapPost("/api/deklaruoti/{deklaracija}",Deklaravimas.Submit).Swagger("","Pateikti deklaraciją").Response<G9.Models.Deklaravimas>(200,422,401,403,404).RequireRole();
 //app.MapPost("/api/deklaruoti/{deklaracija}/{tipas}",Deklaravimas.UpdateOne).Swagger("","Atnaujinti delkaracijos neatitiktis").Response<G9.Models.Deklaravimas>(200,422,401,403,404).RequireRole();
-
-
 
 // Veiklos
 app.MapGet("/api/veiklos",Veiklos.Get).Swagger("","Gaunamos prisijungusio vartotojo veiklos ir deklaruojami metai").Response<G9.Models.Veiklos>(200,401,403).RequireRole();
@@ -43,6 +46,12 @@ app.MapGet("/api/rodikliai",Rodikliai.List).Swagger("","Gaunamas pilnas rodikli�
 app.MapGet("/api/reiksmes/{deklaracija}",Reiksmes.Get).Swagger("","Gauti deklaruojamų rodiklių reikšmes").Response<G9.Models.ArrayModelA<G9.Models.RodiklioReiksme>>(200,401,403,404).RequireRole();
 app.MapPost("/api/reiksmes/{deklaracija}",Reiksmes.Set).Swagger("","Įrašomos rodiklių reikšmės").Produces(204).Errors(422,401,403,404).RequireRole();
 app.MapDelete("/api/reiksmes/{deklaracija}",Reiksmes.Del).Swagger("","Pašalinti rodiklių reikšmes deklaracijoje").Produces(204).Errors(422,401,403,404).RequireRole();
+
+
+//API suvedimas
+app.MapGet("/api/v1/{deklaracija}",IntegracijosAPI_v1.Get).Swagger("","Gauti visas deklaracijos rodiklių reikšmes").Response<G9.Models.ArrayModel<G9.Models.RodiklioSuvedimas>>(200,401,403,404).RequireAPIKey();
+app.MapPost("/api/v1/{deklaracija}",IntegracijosAPI_v1.Set).Swagger("","Įvesti deklaracijos rodiklių reikšmes").Response<G9.Models.ReiksmiuSuvedimasResult>(200,422,401,403).RequireAPIKey();
+app.MapDelete("/api/v1/{deklaracija}",IntegracijosAPI_v1.Del).Swagger("","Pašalinti deklaracijos rodiklio reikšmę/suvedimo reikšmes").Response<G9.Models.ReiksmiuTrynimasResult>(200,401,403).RequireAPIKey();
 
 
 app.Run();

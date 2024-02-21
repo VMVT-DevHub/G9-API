@@ -86,4 +86,19 @@ public static class Deklaracija {
 			else Error.E403(ctx,true);
 		} else Error.E404(ctx,true);
 	}
+
+	
+	/// <summary>Gauti suvedamų rodikliu sąrašą</summary>
+	/// <param name="ctx"></param><param name="ct"></param><returns></returns>
+	/// <param name="deklaracija">Deklaracijos ID</param>
+	public static async Task GetSuvesti(HttpContext ctx, int deklaracija, CancellationToken ct){
+		if(await Deklaravimas.Validate(ctx,deklaracija,ct,true)) {
+			ctx.Response.ContentType="application/json";
+			var options = new JsonWriterOptions{ Indented = false }; //todo: if debug
+			using var writer = new Utf8JsonWriter(ctx.Response.BodyWriter, options);
+			await DBExtensions.PrintArray("SELECT * FROM public.valid_suvesti(@deklar);", new DBParams(("@deklar", deklaracija)), writer, ct);
+			await writer.FlushAsync(ct);
+		}
+	}
+
 }

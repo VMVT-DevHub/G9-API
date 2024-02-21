@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.AspNetCore.Identity;
 using Npgsql;
 
 
@@ -114,7 +115,6 @@ public class DBExec : IDisposable {
 	/// <returns>Įrašų skaičius</returns>
 	public async Task<T?> ExecuteScalar<T>(CancellationToken ct) { var ret = await(await CommandAsync(SQL,ct)).ExecuteScalarAsync(ct); if(!UseTransaction) Dispose(); return ret is T t ? t: default; }
 
-
 	/// <summary>Gauti įrašus kaip masyvą</summary>
 	/// <typeparam name="T">Įrašo formatas</typeparam>
 	/// <param name="col">Įrašo stulpelis</param>
@@ -161,7 +161,103 @@ public class DBExec : IDisposable {
 			IsDisposed = true;
 		}
 	}
+}
 
+/// <summary>Masinis duomenų įvedimas</summary>
+public class DBBatch : IDisposable {	
+	/// <summary>Duomenų bazės užklausų atvaizdavimas konsolėje</summary>
+	public static bool Debug { get; set; } = Config.GetBool("Config","DebugDB",false);
+	private NpgsqlConnection Conn { get; set; }
+	private NpgsqlBinaryImporter? Wrt { get; set; }
+	private NpgsqlBinaryImporter Writer => Wrt is null? Wrt=Conn.BeginBinaryImport($"COPY \"{TblSchema}\".\"{TblName}\" (\"{string.Join("\",\"",TblFields)}\") FROM STDIN (FORMAT BINARY);") : Wrt;
+	private NpgsqlTransaction Tran { get; set; }
+	private static long ExecCount { get; set; } 
+	private long ExecID { get; set; }
+
+	/// <summary>Eilučių įrašymo kiekis</summary>
+	public long Total { get; set; }
+
+	/// <summary>Lentelės įrašymas baigtas</summary>
+	public bool Completed { get; private set; }
+	private string TblSchema {get;set;}
+	private string TblName {get;set;}
+	private List<string> TblFields {get;set;}
+
+	/// <summary>Inicijuojti duomenų perkėlimą</summary>
+	/// <param name="table">Lentelės pavadinimas</param>
+	/// <param name="columns">Stulpeliai</param>
+	/// <param name="schema">Lentelės schema</param>
+	public DBBatch(string table, List<string> columns, string schema = "public"){
+		ExecID=ExecCount++; TblFields=columns; TblName=table; TblSchema=schema;
+		Conn = new NpgsqlConnection(DBProps.ConnString); Conn.Open();
+		Tran = Conn.BeginTransaction();
+	}
+
+
+	/// <summary>Pridėti įrašą</summary><param name="itm"></param>
+	public void Add(params object?[] itm){		
+		Writer.WriteRow(itm); Total++; 
+	}
+		/// <summary>Pridėti įrašą</summary><param name="ct"></param><param name="itm"></param>
+	public async Task Add(CancellationToken ct, params object?[] itm){ await Writer.WriteRowAsync(ct, itm); Total++; }
+
+	/// <summary>Užbaigti duomenų perkėlimą</summary>
+	public void Commit(bool complete=false){ Writer.Complete(); Writer.Close(); Completed = true; if(complete) Complete(); }
+
+	/// <summary>Užbaigti duomenų perkėlimą</summary>
+	public async Task Commit(CancellationToken ct, bool complete=false){ await Writer.CompleteAsync(ct); await Writer.CloseAsync(ct); Completed = true; if(complete) await Complete(ct); }
+
+	/// <summary>Užbaigti tranzakciją</summary>
+	public void Complete(){ Tran.Commit(); }
+	/// <summary>Užbaigti tranzakciją</summary>
+	public async Task Complete(CancellationToken ct){ await Tran.CommitAsync(ct); }
+
+
+
+
+	/// <summary>Vykdyti SQL užklausą</summary><param name="sql"></param><param name="param"></param><param name="ct"></param><returns>Įrašų skaičius</returns>
+	public async Task<int> Execute(string sql, CancellationToken ct, params ValueTuple<string, object?>[]? param)  { 
+		using var cmd = new NpgsqlCommand(sql, Conn, Tran);
+		if(param is not null) new DBParams(param).Load(ExecID, cmd);
+		return await cmd.ExecuteNonQueryAsync(ct);
+	}
+
+	/// <summary>Vykdyti SQL užklausą</summary><returns>Reikšmė</returns>
+	public async Task<T?> ExecuteScalar<T>(string sql, CancellationToken ct, params ValueTuple<string, object?>[]? param) {
+		using var cmd = new NpgsqlCommand(sql, Conn, Tran);
+		if(param is not null) new DBParams(param).Load(ExecID, cmd);
+		var ret = await cmd.ExecuteScalarAsync(ct);
+		return ret is T t ? t: default; 
+	}
+
+
+
+
+
+
+
+	// To detect redundant calls
+	private bool IsDisposed;
+	/// <summary>Duomenų bazės uždarymo metodas</summary>
+	public void Dispose() { Dispose(true); GC.SuppressFinalize(this); }
+	/// <summary>Duomenų bazės uždarymo metodas</summary>
+	/// <param name="disposing"></param>
+	protected virtual void Dispose(bool disposing) {
+		if (!IsDisposed) {
+			if (disposing) {
+				try {
+					if(!Completed){ Writer.Close(); Tran.Rollback(); }
+					Writer.Dispose();
+					Tran.Dispose();
+					Conn.Dispose();
+				} catch (Exception ex) {				
+					Console.WriteLine($"[SQLTranError] Dispose  {ex.Message}");
+					Console.WriteLine(ex.StackTrace);
+				}
+			}
+			IsDisposed = true;
+		}
+	}
 }
 
 
@@ -394,7 +490,7 @@ public class DBParams {
 
 
 
-/// <summary>Veiklų skaitinių reikšmių modelis</summary>
+/// <summary>Dažnai naudojamų skaitinių reikšmių modelis</summary>
 public class CachedLookup : Dictionary<string,Dictionary<string,string>> {
 	/// <summary>Json formatas</summary>
 	public string Json => Refresh().Cached??"";
@@ -405,7 +501,7 @@ public class CachedLookup : Dictionary<string,Dictionary<string,string>> {
 	private Dictionary<string,string> Props { get;set; } 
 
 	/// <summary>Inicijuojamas naujos Lookup reikšmės</summary>
-	/// <param name="cfg">KOnfiguracijos pavadinimas</param>
+	/// <param name="cfg">Konfiguracijos pavadinimas</param>
 	/// <param name="pairs">Parametrai</param>
 	public CachedLookup(string cfg, params ValueTuple<string, string>[] pairs){
 		CfgName=cfg;
@@ -419,6 +515,7 @@ public class CachedLookup : Dictionary<string,Dictionary<string,string>> {
 	public CachedLookup Refresh(bool force=false) {
 		if(force || Cached is null || Reload<DateTime.UtcNow){
 			Reload = DateTime.UtcNow.AddSeconds(Config.GetInt("Cache",$"{CfgName}Values",300));
+			Clear();
 			foreach(var i in Props) this[i.Key]=DBExtensions.GetValues(i.Value);
 			Cached = JsonSerializer.Serialize(this);
 		}
@@ -426,3 +523,25 @@ public class CachedLookup : Dictionary<string,Dictionary<string,string>> {
 	}
 }
 
+/// <summary>Sukurti dažnai naudojamų objektų sąrašą</summary>
+/// <typeparam name="T1">Sąrašo rakto formatas</typeparam>
+/// <typeparam name="T2">Sąrašo formatas</typeparam>
+/// <remarks>Inicijuojamas naujas objektas</remarks>
+/// <param name="cfg">Konfiguracijos pavadinimas</param>
+/// <param name="funct">Pildymo funkcija</param>
+public class CachedLookup<T1,T2>(string cfg, Action<Dictionary<T1, T2>> funct) : Dictionary<T1,T2> where T1 : notnull {
+	private DateTime Reload { get; set; }
+	private Action<Dictionary<T1, T2>> Function { get; set; } = funct;
+	/// <summary>Konfiguracijos pavadinimas</summary>
+	public string CfgName { get; set; } = cfg;
+
+	/// <summary>Atnaujinti duomenis</summary>
+	/// <param name="force">Priverstinai atnaujinti</param><returns></returns>
+	public CachedLookup<T1,T2> Refresh(bool force=false){
+		if(force || Reload<DateTime.UtcNow){
+			Reload = DateTime.UtcNow.AddSeconds(Config.GetInt("Cache",$"{CfgName}Values",300));
+			Clear(); Function(this);
+		}
+		return this;
+	}
+}

@@ -8,7 +8,7 @@ namespace App.API;
 /// <summary>Deklaravimo API</summary>
 public static class Deklaravimas {	
 	/// <summary>Deklaravimo viršijimo statinės reikšmės</summary>
-	public static CachedLookup DeklarVirsijimasVal { get; } = new CachedLookup("Virsijimas", ("Tipas","lkp_vietos_tipas"),("Statusas","lkp_stebejimo_statusas"));
+	public static CachedLookup DeklarVirsijimasVal { get; } = new CachedLookup("Virsijimas", ("Tipas","lkp_vietos_tipas"),("Statusas","lkp_stebejimo_statusas"),("Veiksmas","lkp_virs_taisomas_veiksmas"),("Priezastis","lkp_virs_taisomas_priezastis"));
 
 	/// <summary>Deklaracijos validacija</summary>
 	/// <param name="ctx"></param>
@@ -100,10 +100,10 @@ public static class Deklaravimas {
 		if(await Validate(ctx,deklaracija,ct)) await PrintDeklar(ctx,deklaracija,ct,tipas);
 	}
 
-
+	
 	private static readonly string SqlUpdateTrukumas = "UPDATE public.valid_trukumas SET vld_tvirtinti=@tvrt,vld_kitas=@kitas,vld_pastabos=@pstb,vld_user=@usr,vld_date_modif=timezone('utc', now()) WHERE vld_id=@id and vld_deklar=@deklar;";
 	private static readonly string SqlUpdateKartojasi = "UPDATE public.valid_kartojasi SET vld_tvirtinti=@tvrt,vld_pastabos=@pstb,vld_user=@usr,vld_date_modif=timezone('utc', now()) WHERE vld_id=@id and vld_deklar=@deklar;";
-	private static readonly string SqlUpdateVirsija = "UPDATE public.valid_virsija SET vld_tvirtinti=@tvrt,vld_pastabos=@pstb,vld_user=@usr,vld_date_modif=timezone('utc', now()),vld_nereiksm=@nereik,vld_nereiksm_apras=@nereikapras,vld_zmones=@zmones,vld_loq_reiksme=@loqr,vld_loq_verte=@loqv,vld_statusas=@stat,vld_tipas=@tipas WHERE vld_deklar=@deklar and vld_id=@id;";
+	private static readonly string SqlUpdateVirsija = "UPDATE public.valid_virsija SET vld_tvirtinti=@tvrt,vld_pastabos=@pstb,vld_user=@usr,vld_date_modif=timezone('utc', now()),vld_nereiksm=@nereik,vld_nereiksm_apras=@nereikapras,vld_zmones=@zmones,vld_loq_reiksme=@loqr,vld_loq_verte=@loqv,vld_statusas=@stat,vld_tipas=@tipas,vld_priez=@tspriez,vld_veiksmas=@tsveiksm,vld_pradzia=@tsprad,vld_pabaiga=@tspab WHERE vld_deklar=@deklar and vld_id=@id;";
 	private static async Task<Err> Save(HttpContext ctx, int deklaracija, NeatitiktysSet data, CancellationToken ct){
 		var usr = ctx.GetUser()?.ID; var err = new Err();
 		using var db = new DBExec(""){ UseTransaction=true };
@@ -126,25 +126,41 @@ public static class Deklaravimas {
 			}
 		}
 		if(data.Virsijimas?.Count>0){
-			DeklarVirsijimasVal.TryGetValue("Tipas",out var tps); tps??=new();
-			DeklarVirsijimasVal.TryGetValue("Statusas",out var sts); sts??=new();
+			DeklarVirsijimasVal.TryGetValue("Tipas",out var tps); tps??=[];
+			DeklarVirsijimasVal.TryGetValue("Statusas",out var sts); sts??=[];
+			DeklarVirsijimasVal.TryGetValue("Veiksmas",out var vks); vks??=[];
+			DeklarVirsijimasVal.TryGetValue("Priezastis",out var prz); prz??=[];
 			var param = new DBParams(("@deklar",deklaracija),("@usr",usr),("@id",0),("@tvirt",false),("@past",""));
 			foreach(var i in data.Virsijimas){
-				if(i.Patvirtinta) {
-					string? msg=null;
-					if(i.Nereiksmingas is null) msg="Nepažymėtas reikšmingumas";
-					else if(i.Nereiksmingas.Value && !(i.NereiksmApras?.Length>4)) msg="Neįvestas arba per trumpas nereikšmingo viršijimo pagrindimas";
-					else if(i.LOQVerte is null) msg="Nepažymėta LOQ vertė";
-					else if(i.LOQVerte.Value && (i.LOQReiksme??0)==0) msg="Neįvesta LOQ vertė";
-					else if(!(i.Zmones>0)) msg="Neįvestas paveiktų žmonių skaičius";
-					else if(!tps.ContainsKey(i.Tipas?.ToString()??"")) msg="Nepasirinktas mėginių ėmimo vietos tipas";
-					else if(!sts.ContainsKey(i.Statusas?.ToString()??"")) msg="Nepasirinktas stebėjimo statusas";
-					if(!string.IsNullOrEmpty(msg)){ (err.Virsijimas??=new()).Add(new(i.ID,msg)); i.Patvirtinta=false; }
+				if(i.ID>0){
+					if(i.Patvirtinta) {
+						string? msg=null;
+						if(new DBExec("SELECT public.valid_virsija_detales(@id);","@id",i.ID).ExecuteScalar<bool>()){
+							if(i.Nereiksmingas is null) msg="Nepažymėtas reikšmingumas";
+							else if(i.Nereiksmingas.Value && !(i.NereiksmApras?.Length>4)) msg="Neįvestas arba per trumpas nereikšmingo viršijimo pagrindimas";
+							else if(i.LOQVerte is null) msg="Nepažymėta LOQ vertė";
+							else if(i.LOQVerte.Value && (i.LOQReiksme??0)==0) msg="Neįvesta LOQ vertė";
+							else if(!(i.Zmones>0)) msg="Neįvestas paveiktų žmonių skaičius";
+							else if(!tps.ContainsKey(i.Tipas?.ToString()??"")) msg="Nepasirinktas mėginių ėmimo vietos tipas";
+							else if(!sts.ContainsKey(i.Statusas?.ToString()??"")) msg="Nepasirinktas stebėjimo statusas";
+						}
+
+						if(msg is null){
+							if(!vks.ContainsKey(i.Veiksmas??"")) msg="Nepasirinktas viršijimo taisomasis veiksmas";
+							else if(!prz.ContainsKey(i.Priezastis.ToString()??"")) msg="Nepasirinkta viršijimo priežastis";
+							else if(i.Pradzia==DateOnly.MinValue) msg="Nepasirinkta taisomojo veiksmo pradžios data";
+							else if(i.Pabaiga==DateOnly.MinValue) msg="Nepasirinkta taisomojo veiksmo pabaigos data";
+							else if(i.Pabaiga>i.Pabaiga) msg="Taisomojo veiksmo pradžios data negali būti vėlesne negu pabaigos";
+						}
+
+						if(!string.IsNullOrEmpty(msg)){ (err.Virsijimas??=[]).Add(new(i.ID,msg)); i.Patvirtinta=false; }
+					}
+					param.Data["@id"]=i.ID; param.Data["@tvrt"]=i.Patvirtinta; param.Data["@pstb"]=i.Pastabos;
+					param.Data["@nereik"]=i.Nereiksmingas; param.Data["@nereikapras"]=i.NereiksmApras; param.Data["@zmones"]=i.Zmones; 
+					param.Data["@loqr"]=i.LOQReiksme; param.Data["@loqv"]=i.LOQVerte; param.Data["@stat"]=i.Statusas; param.Data["@tipas"]=i.Tipas;
+					param.Data["@tsveiksm"]=i.Veiksmas; param.Data["@tspriez"]=i.Priezastis; param.Data["@tsprad"]=i.Pradzia; param.Data["@tspab"]=i.Pabaiga;
+					await db.Execute(SqlUpdateVirsija,param,ct);
 				}
-				param.Data["@id"]=i.ID; param.Data["@tvrt"]=i.Patvirtinta; param.Data["@pstb"]=i.Pastabos;
-				param.Data["@nereik"]=i.Nereiksmingas; param.Data["@nereikapras"]=i.NereiksmApras; param.Data["@zmones"]=i.Zmones; 
-				param.Data["@loqr"]=i.LOQReiksme; param.Data["@loqv"]=i.LOQVerte; param.Data["@stat"]=i.Statusas; param.Data["@tipas"]=i.Tipas;
-				await db.Execute(SqlUpdateVirsija,param,ct);				
 			}
 		}
 		db.Transaction?.Commit();
@@ -152,12 +168,15 @@ public static class Deklaravimas {
 	}
 
 
-	private static async Task<bool> Validate(HttpContext ctx, long deklaracija, CancellationToken ct){
+	/// <summary>Tikrinti ar galima deklaruoti</summary>
+	/// <param name="ctx"></param><param name="ct"></param><returns></returns>
+	/// <param name="deklaracija">Deklaracijos ID</param><param name="skipkiek">Praleisti kiekio validaciją</param>
+	public static async Task<bool> Validate(HttpContext ctx, long deklaracija, CancellationToken ct, bool skipkiek=false){
 		using var db = new DBExec("SELECT dkl_gvts, dkl_status, dkl_metai, dkl_kiekis FROM deklaravimas WHERE dkl_id=@id;","@id",deklaracija);
 		using var rdr = await db.GetReader(ct);
 		if(rdr.Read()){
 			if(ctx.GetUser()?.Roles?.Contains(rdr.GetInt64(0)) == true){	
-				if(rdr.GetDoubleN(3)>0) {	
+				if(skipkiek || rdr.GetDoubleN(3)>0) {	
 					var status = rdr.GetInt32(1);
 					if(status==3) Error.E422(ctx,true,$"Ši deklaracija jau pateikta.");
 					else {					

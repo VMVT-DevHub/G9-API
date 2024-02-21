@@ -1,4 +1,8 @@
+using System.Runtime.CompilerServices;
 using System.Text.Json;
+using App.Auth;
+using G9.Models;
+using Microsoft.AspNetCore.Mvc;
 
 namespace App.API;
 
@@ -6,7 +10,6 @@ namespace App.API;
  public static class Rodikliai {
 	/// <summary>Rodiklių statinės reikšmės</summary>
 	public static CachedLookup RodikliaiVal { get; } = new CachedLookup("Rodikliai", ("Grupe","lkp_rodikliu_grupes"),("GrupesValidacija","lkp_rodikliu_validacija"),("Daznumas","lkp_daznumas"));
-
 	/// <summary>Dažnumo statinės reikšmės</summary>
 	public static CachedLookup DaznumasVal { get; } = new CachedLookup("Daznumas", ("Daznumas","lkp_daznumas"),("Laikas","lkp_daznumo_laikas"));
 
@@ -44,3 +47,19 @@ namespace App.API;
  	}
 
 }
+
+
+
+
+/// <summary>Rodiklio informacija</summary>
+public class Rodiklis {
+	/// <summary>Rodiklio unikalus numeris</summary>
+	public int ID { get; set; }
+	/// <summary>Rodiklio grupė</summary>
+	public int Grupe { get; set; }
+	/// <summary>Rodiklio EU numeris</summary>
+	public string? Kodas { get; set; }
+	/// <summary>Rodiklio pavadinimas</summary>
+	public string? Pavadinimas { get; set; }
+}
+
