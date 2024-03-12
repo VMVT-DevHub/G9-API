@@ -19,7 +19,7 @@ public class Auth {
 		var ip = ctx.GetIP();
 		if(!string.IsNullOrEmpty(ip)){
 			if(!LockList.TryGetValue(ip, out var lck)){ lck = new(); LockList.TryAdd(ip, lck); }
-			lock(lck){ lck.LastLock=DateTime.UtcNow; lck.Count++; var dly = Config.GetLong("Auth", "LockDelay", 1); if(dly>0) Thread.Sleep((int)dly); }
+			lock(lck){ lck.LastLock=DateTime.UtcNow; lck.Count++; var dly = Config.GetInt("Auth", "LockDelay", 1); if(dly>0) Thread.Sleep(dly); }
 			if(NextClean<DateTime.UtcNow){
 				NextClean = DateTime.UtcNow.AddSeconds(Config.GetLong("Auth", "LockCleanInterval", 300));
 				var cleanint = DateTime.UtcNow.AddSeconds(Config.GetLong("Auth", "LockCleanDelay", 300));

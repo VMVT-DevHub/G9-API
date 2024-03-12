@@ -25,9 +25,9 @@ namespace App.API;
 		var rls = ctx.GetUser()?.Roles?.ToArray();
 		writer.WritePropertyName("Rodikliai");
 		//TODO: Cache this
-		await DBExtensions.PrintArray("SELECT * FROM public.v_rodikliai;", null, writer, ct, RodikliaiVal);
+		await DBExtensions.PrintArray("SELECT * FROM g9.v_rodikliai;", null, writer, ct, RodikliaiVal);
 		writer.WritePropertyName("Daznumas");
-		await DBExtensions.PrintArray("SELECT * FROM public.v_daznumas;", null, writer, ct,  DaznumasVal);
+		await DBExtensions.PrintArray("SELECT * FROM g9.v_daznumas;", null, writer, ct,  DaznumasVal);
 
 		writer.WritePropertyName("Stebesenos");
 		writer.WriteStartArray();
@@ -37,7 +37,7 @@ namespace App.API;
 				writer.WriteNumber("ID", key);
 				writer.WriteString("Pavadinimas", i.Value);
 				writer.WritePropertyName("Rodikliai");
-				await DBExtensions.PrintList("SELECT stb_rodiklis FROM public.stebesenos WHERE stb_stebesenos=@key ORDER BY stb_rodiklis;",new(("@key",key)),writer,ct);
+				await DBExtensions.PrintList("SELECT stb_rodiklis FROM g9.stebesenos WHERE stb_stebesenos=@key ORDER BY stb_rodiklis;",new(("@key",key)),writer,ct);
 				writer.WriteEndObject();
 			}
 		}
