@@ -13,7 +13,7 @@ public static class Reiksmes {
 	/// <param name="deklaracija">Geriamo vandens tiekimo sistems</param>
 	/// <returns></returns>
 	public static async Task Get(HttpContext ctx, long deklaracija,CancellationToken ct){
-		var gvts = await new DBExec("SELECT dkl_gvts FROM deklaravimas WHERE dkl_id=@id;", "@id", deklaracija).ExecuteScalar<long>(ct);
+		var gvts = await new DBExec("SELECT dkl_gvts FROM g9.deklaravimas WHERE dkl_id=@id;", "@id", deklaracija).ExecuteScalar<long>(ct);
 		if(gvts>0){
 			if(ctx.GetUser()?.Roles?.Contains(gvts) == true) await PrintRodikl(ctx,deklaracija,ct);
 			else Error.E403(ctx,true);
@@ -24,7 +24,7 @@ public static class Reiksmes {
 		ctx.Response.ContentType="application/json";
 		var options = new JsonWriterOptions{ Indented = false }; //todo: if debug
 		using var writer = new Utf8JsonWriter(ctx.Response.BodyWriter, options);
-		await DBExtensions.PrintArray("SELECT * FROM public.v_reiksmes where \"Deklaracija\"=@id;", new(("@ID",deklaracija)), writer, ct);
+		await DBExtensions.PrintArray("SELECT * FROM g9.v_reiksmes where \"Deklaracija\"=@id;", new(("@ID",deklaracija)), writer, ct);
 		await writer.FlushAsync(ct);
 		return;
 	}
@@ -35,7 +35,7 @@ public static class Reiksmes {
 	/// <param name="ct"></param>
 	/// <returns></returns>
  	public static async Task Set(HttpContext ctx, long deklaracija, List<RodiklisSet> data ,CancellationToken ct){
-		using var db = new DBExec("SELECT dkl_gvts, dkl_status, dkl_metai FROM deklaravimas WHERE dkl_id=@id;","@id",deklaracija);
+		using var db = new DBExec("SELECT dkl_gvts, dkl_status, dkl_metai FROM g9.deklaravimas WHERE dkl_id=@id;","@id",deklaracija);
 		using var rdr = await db.GetReader(ct);
 		if(rdr.Read()){
 			var usr = ctx.GetUser();
@@ -65,7 +65,7 @@ public static class Reiksmes {
 	private static async Task<int> WriteReiksmes(long deklaracija, Guid? user, List<int> rodk, List<DateOnly> date, List<double> reiksme, CancellationToken ct){
 		var ret = 0;
 		if(rodk.Count>0) {
-			ret = await new DBExec("INSERT into public.reiksmes (rks_deklar,rks_user,rks_rodiklis,rks_date,rks_reiksme) SELECT @id, @usr, t.* FROM unnest(@rod,@date,@val) t;",
+			ret = await new DBExec("INSERT into g9.reiksmes (rks_deklar,rks_user,rks_rodiklis,rks_date,rks_reiksme) SELECT @id, @usr, t.* FROM unnest(@rod,@date,@val) t;",
 			("@id",deklaracija),("@usr",user),("@rod",rodk),("@date",date),("@val",reiksme)).Execute(ct);
 		}
 		rodk.Clear(); date.Clear(); reiksme.Clear();
@@ -79,13 +79,13 @@ public static class Reiksmes {
 	/// <param name="ct"></param>
 	/// <returns></returns>
  	public static async Task Del(HttpContext ctx, long deklaracija, [FromBody] List<long> data, CancellationToken ct){
-		using var db = new DBExec("SELECT dkl_gvts, dkl_status, dkl_metai FROM deklaravimas WHERE dkl_id=@id;","@id",deklaracija);
+		using var db = new DBExec("SELECT dkl_gvts, dkl_status, dkl_metai FROM g9.deklaravimas WHERE dkl_id=@id;","@id",deklaracija);
 		using var rdr = await db.GetReader(ct);
 		if(rdr.Read()){
 			if(ctx.GetUser()?.Roles?.Contains(rdr.GetInt64(0)) == true){			
 				if(rdr.GetInt32(1)==3) Error.E422(ctx,true,$"Negalima keisti jau deklaruotų duomenų");
 				else {
-					 await new DBExec("DELETE FROM public.reiksmes WHERE rks_deklar=@id and rks_id = ANY(@lst)",("@id",deklaracija),("@lst",data)).Execute(ct);
+					 await new DBExec("DELETE FROM g9.reiksmes WHERE rks_deklar=@id and rks_id = ANY(@lst)",("@id",deklaracija),("@lst",data)).Execute(ct);
 					//TODO: Log stuff;
 					ctx.Response.StatusCode=204; await ctx.Response.CompleteAsync();
 				}
@@ -103,7 +103,7 @@ public static class Reiksmes {
 public class IntegracijosAPI_v1 {
 
 	private static CachedLookup<string,Rodiklis> RodikliaiList { get; } = new ("Rodikliai", (dict)=>{
-		using var db = new DBExec("SELECT rod_id,rod_grupe,rod_kodas,rod_rodiklis FROM public.rodikliai");
+		using var db = new DBExec("SELECT rod_id,rod_grupe,rod_kodas,rod_rodiklis FROM g9.rodikliai");
 		using var rdr = db.GetReader();
 		while(rdr.Read()){
 			var kod = rdr.GetStringN(2);
@@ -125,14 +125,14 @@ public class IntegracijosAPI_v1 {
 				ctx.Response.ContentType="application/json";			
 				var options = new JsonWriterOptions{ Indented = false }; //todo: if debug
 				using var writer = new Utf8JsonWriter(ctx.Response.BodyWriter, options);
-				await DBExtensions.PrintArray("SELECT \"ID\",\"Suvedimas\",\"Kodas\",\"Data\",\"Reiksme\" FROM public.v_rodikliai_suvedimas WHERE \"Deklaracija\"=@deklar;", new(("@deklar",deklaracija)), writer, ct);
+				await DBExtensions.PrintArray("SELECT \"ID\",\"Suvedimas\",\"Kodas\",\"Data\",\"Reiksme\" FROM g9.v_rodikliai_suvedimas WHERE \"Deklaracija\"=@deklar;", new(("@deklar",deklaracija)), writer, ct);
 				await writer.FlushAsync(ct);
 			} else {
 				if(RodikliaiList.Refresh().TryGetValue(rodiklis, out var rdk)){
 					ctx.Response.ContentType="application/json";			
 					var options = new JsonWriterOptions{ Indented = false }; //todo: if debug
 					using var writer = new Utf8JsonWriter(ctx.Response.BodyWriter, options);
-					await DBExtensions.PrintArray("SELECT rks_id \"ID\", rks_suvedimas \"Suvedimas\", @code \"Kodas\", rks_date \"Data\", rks_reiksme \"Reiksme\" FROM public.reiksmes WHERE rks_deklar=@deklar and rks_rodiklis=@id", 
+					await DBExtensions.PrintArray("SELECT rks_id \"ID\", rks_suvedimas \"Suvedimas\", @code \"Kodas\", rks_date \"Data\", rks_reiksme \"Reiksme\" FROM g9.reiksmes WHERE rks_deklar=@deklar and rks_rodiklis=@id", 
 						new(("@deklar",deklaracija),("@id",rdk.ID),("@code",rdk.Kodas)), writer, ct);
 					await writer.FlushAsync(ct);
 				} else Error.E404(ctx,true);
@@ -151,7 +151,7 @@ public class IntegracijosAPI_v1 {
 			var rdl = RodikliaiList.Refresh();
 			using var db = new DBBatch("reiksmes", ["rks_rodiklis","rks_date","rks_reiksme","rks_deklar","rks_suvedimas","rks_user"]);
 			
-			var sk = await db.ExecuteScalar<long>("INSERT INTO public.suvedimai (rsv_deklar,rsv_type,rsv_user) VALUES (@deklar,'3',@user) RETURNING rsv_id;",ct, ("@deklar",deklaracija), ("@user",api.ID));
+			var sk = await db.ExecuteScalar<long>("INSERT INTO g9.suvedimai (rsv_deklar,rsv_type,rsv_user) VALUES (@deklar,'3',@user) RETURNING rsv_id;",ct, ("@deklar",deklaracija), ("@user",api.ID));
 			
 			var cnt = data.Count;
 			for(var i=0; i<cnt ; i++){
@@ -188,10 +188,10 @@ public class IntegracijosAPI_v1 {
 			lock(api){
 				if(ct.IsCancellationRequested) return;
 				if(rodiklis>0){					
-					del = new DBExec("DELETE FROM public.reiksmes WHERE rks_deklar=@deklar and rks_id=@id",("@deklar",deklaracija),("@id",rodiklis)).Execute();
+					del = new DBExec("DELETE FROM g9.reiksmes WHERE rks_deklar=@deklar and rks_id=@id",("@deklar",deklaracija),("@id",rodiklis)).Execute();
 				}
 				else if(suvedimas>0){
-					del = new DBExec("DELETE FROM public.reiksmes WHERE rks_deklar=@deklar and rks_suvedimas=@id",("@deklar",deklaracija),("@id",suvedimas)).Execute();
+					del = new DBExec("DELETE FROM g9.reiksmes WHERE rks_deklar=@deklar and rks_suvedimas=@id",("@deklar",deklaracija),("@id",suvedimas)).Execute();
 				}
 				else { Error.E404(ctx,true); return;}
 				Thread.Sleep(200);

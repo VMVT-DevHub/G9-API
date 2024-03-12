@@ -27,15 +27,15 @@ public static class Deklaravimas {
 		var prms = new DBParams(("@deklar", deklaracija),("@usr", ctx.GetUser()?.ID));
 		if(tipas is null || tipas == NeatitikciuTipas.Trukumas){
 			writer.WritePropertyName("Trukumas");
-			await DBExtensions.PrintArray("SELECT * FROM public.valid_trukumas_set(@deklar,@usr);", prms, writer, ct, null, error?.Trukumas);
+			await DBExtensions.PrintArray("SELECT * FROM g9.valid_trukumas_set(@deklar,@usr);", prms, writer, ct, null, error?.Trukumas);
 		}		
 		if(tipas is null || tipas == NeatitikciuTipas.Kartojasi){
 			writer.WritePropertyName("Kartojasi");
-			await DBExtensions.PrintArray("SELECT * FROM public.valid_kartojasi_set(@deklar,@usr);", prms, writer, ct, null, error?.Kartojasi);
+			await DBExtensions.PrintArray("SELECT * FROM g9.valid_kartojasi_set(@deklar,@usr);", prms, writer, ct, null, error?.Kartojasi);
 		}
 		if(tipas is null || tipas == NeatitikciuTipas.Virsijimas){
 			writer.WritePropertyName("Virsijimas");
-			await DBExtensions.PrintArray("SELECT * FROM public.valid_virsija_set(@deklar,@usr);", prms, writer, ct, DeklarVirsijimasVal, error?.Virsijimas);
+			await DBExtensions.PrintArray("SELECT * FROM g9.valid_virsija_set(@deklar,@usr);", prms, writer, ct, DeklarVirsijimasVal, error?.Virsijimas);
 		}
 		writer.WriteEndObject();
 		await writer.FlushAsync(ct);
@@ -54,8 +54,8 @@ public static class Deklaravimas {
 		if(await Validate(ctx,deklaracija,ct)){
 			var usr = ctx.GetUser()??new();
 			var prms = new DBParams(("@deklar",deklaracija),("@usr",usr.ID));			
-			await new DBExec("SELECT public.valid_trukumas_set(@deklar,@usr), public.valid_kartojasi_set(@deklar,@usr), public.valid_virsija_set(@deklar,@usr);", prms).Execute(ct);
-			using var db = new DBExec("SELECT kartojasi, trukumas, virsija FROM public.valid_nepatvirtinta(@deklar);",prms);
+			await new DBExec("SELECT g9.valid_trukumas_set(@deklar,@usr), g9.valid_kartojasi_set(@deklar,@usr), g9.valid_virsija_set(@deklar,@usr);", prms).Execute(ct);
+			using var db = new DBExec("SELECT kartojasi, trukumas, virsija FROM g9.valid_nepatvirtinta(@deklar);",prms);
 			using var rdr = await db.GetReader(ct);
 			if(await rdr.ReadAsync(ct)){
 				var ret = new G9.Models.Deklaravimas(){
@@ -66,7 +66,7 @@ public static class Deklaravimas {
 				
 				if(!ret.Klaida){
 					var param = new DBParams(("@id",deklaracija),("@name",usr.FullName),("@usr",usr.ID));
-					await new DBExec("UPDATE public.deklaravimas SET dkl_status=3, dkl_deklar_date=timezone('utc',now()), dkl_deklar_user=@name, dkl_deklar_user_id=@usr,"+
+					await new DBExec("UPDATE g9.deklaravimas SET dkl_status=3, dkl_deklar_date=timezone('utc',now()), dkl_deklar_user=@name, dkl_deklar_user_id=@usr,"+
 						" dkl_modif_date=timezone('utc',now()), dkl_modif_user=@name, dkl_modif_user_id=@usr WHERE dkl_id=@id;", param).Execute(ct);
 					ret.Statusas = "Deklaruota";
 				} else { ret.Statusas = "Yra nepatvirtintų neatitikčių"; }
@@ -101,9 +101,9 @@ public static class Deklaravimas {
 	}
 
 	
-	private static readonly string SqlUpdateTrukumas = "UPDATE public.valid_trukumas SET vld_tvirtinti=@tvrt,vld_kitas=@kitas,vld_pastabos=@pstb,vld_user=@usr,vld_date_modif=timezone('utc', now()) WHERE vld_id=@id and vld_deklar=@deklar;";
-	private static readonly string SqlUpdateKartojasi = "UPDATE public.valid_kartojasi SET vld_tvirtinti=@tvrt,vld_pastabos=@pstb,vld_user=@usr,vld_date_modif=timezone('utc', now()) WHERE vld_id=@id and vld_deklar=@deklar;";
-	private static readonly string SqlUpdateVirsija = "UPDATE public.valid_virsija SET vld_tvirtinti=@tvrt,vld_pastabos=@pstb,vld_user=@usr,vld_date_modif=timezone('utc', now()),vld_nereiksm=@nereik,vld_nereiksm_apras=@nereikapras,vld_zmones=@zmones,vld_loq_reiksme=@loqr,vld_loq_verte=@loqv,vld_statusas=@stat,vld_tipas=@tipas,vld_priez=@tspriez,vld_veiksmas=@tsveiksm,vld_pradzia=@tsprad,vld_pabaiga=@tspab WHERE vld_deklar=@deklar and vld_id=@id;";
+	private static readonly string SqlUpdateTrukumas = "UPDATE g9.valid_trukumas SET vld_tvirtinti=@tvrt,vld_kitas=@kitas,vld_pastabos=@pstb,vld_user=@usr,vld_date_modif=timezone('utc', now()) WHERE vld_id=@id and vld_deklar=@deklar;";
+	private static readonly string SqlUpdateKartojasi = "UPDATE g9.valid_kartojasi SET vld_tvirtinti=@tvrt,vld_pastabos=@pstb,vld_user=@usr,vld_date_modif=timezone('utc', now()) WHERE vld_id=@id and vld_deklar=@deklar;";
+	private static readonly string SqlUpdateVirsija = "UPDATE g9.valid_virsija SET vld_tvirtinti=@tvrt,vld_pastabos=@pstb,vld_user=@usr,vld_date_modif=timezone('utc', now()),vld_nereiksm=@nereik,vld_nereiksm_apras=@nereikapras,vld_zmones=@zmones,vld_loq_reiksme=@loqr,vld_loq_verte=@loqv,vld_statusas=@stat,vld_tipas=@tipas,vld_priez=@tspriez,vld_veiksmas=@tsveiksm,vld_pradzia=@tsprad,vld_pabaiga=@tspab WHERE vld_deklar=@deklar and vld_id=@id;";
 	private static async Task<Err> Save(HttpContext ctx, int deklaracija, NeatitiktysSet data, CancellationToken ct){
 		var usr = ctx.GetUser()?.ID; var err = new Err();
 		using var db = new DBExec(""){ UseTransaction=true };
@@ -135,7 +135,7 @@ public static class Deklaravimas {
 				if(i.ID>0){
 					if(i.Patvirtinta) {
 						string? msg=null;
-						if(new DBExec("SELECT public.valid_virsija_detales(@id);","@id",i.ID).ExecuteScalar<bool>()){
+						if(new DBExec("SELECT g9.valid_virsija_detales(@id);","@id",i.ID).ExecuteScalar<bool>()){
 							if(i.Nereiksmingas is null) msg="Nepažymėtas reikšmingumas";
 							else if(i.Nereiksmingas.Value && !(i.NereiksmApras?.Length>4)) msg="Neįvestas arba per trumpas nereikšmingo viršijimo pagrindimas";
 							else if(i.LOQVerte is null) msg="Nepažymėta LOQ vertė";
@@ -172,7 +172,7 @@ public static class Deklaravimas {
 	/// <param name="ctx"></param><param name="ct"></param><returns></returns>
 	/// <param name="deklaracija">Deklaracijos ID</param><param name="skipkiek">Praleisti kiekio validaciją</param>
 	public static async Task<bool> Validate(HttpContext ctx, long deklaracija, CancellationToken ct, bool skipkiek=false){
-		using var db = new DBExec("SELECT dkl_gvts, dkl_status, dkl_metai, dkl_kiekis FROM deklaravimas WHERE dkl_id=@id;","@id",deklaracija);
+		using var db = new DBExec("SELECT dkl_gvts, dkl_status, dkl_metai, dkl_kiekis FROM g9.deklaravimas WHERE dkl_id=@id;","@id",deklaracija);
 		using var rdr = await db.GetReader(ct);
 		if(rdr.Read()){
 			if(ctx.GetUser()?.Roles?.Contains(rdr.GetInt64(0)) == true){	

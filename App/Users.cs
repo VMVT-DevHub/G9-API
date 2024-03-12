@@ -47,7 +47,7 @@ public class User {
 		using var rdr = db.GetReader(); Roles = new(); Admin = new();
 
 		if(JA is not null){
-			var lst = new DBExec("SELECT vkl_id FROM gvts WHERE vkl_ja=@ja","@ja",JA.ID).GetList<long>();
+			var lst = new DBExec("SELECT vkl_id FROM g9.gvts WHERE vkl_ja=@ja","@ja",JA.ID).GetList<long>();
 			foreach(var i in lst){ Roles.Add(i); Admin.Add(i); }
 		}
 		else {

@@ -389,7 +389,7 @@ public static class DBExtensions {
 	/// <returns></returns>
 	public static Dictionary<string,string> GetValues(string view) {
 		var ret = new Dictionary<string,string>();
-		using var db = new DBExec($"SELECT key,val FROM public.{view};");
+		using var db = new DBExec($"SELECT key,val FROM g9.{view};");
 		using var rdr = db.GetReader();
 		var isint = rdr.GetFieldType(0) == typeof(int);
 		while(rdr.Read()) ret[(isint?rdr.GetIntN(0).ToString():rdr.GetStringN(0))??""]=rdr.GetStringN(1)??"";

@@ -21,9 +21,9 @@ public static class Prieigos {
 			writer.WriteStartObject();
 			var gvts = new DBParams(("@gvts", rle.ToArray()));
 			writer.WritePropertyName("GVTS");
-			await DBExtensions.PrintArray("SELECT * FROM public.v_gvts WHERE \"ID\" = ANY(@gvts);", gvts, writer, ct);
+			await DBExtensions.PrintArray("SELECT * FROM g9.v_gvts WHERE \"ID\" = ANY(@gvts);", gvts, writer, ct);
 			writer.WritePropertyName("Users");
-			await DBExtensions.PrintArray("SELECT * FROM public.gvts_users(@gvts);", gvts, writer, ct);
+			await DBExtensions.PrintArray("SELECT * FROM g9.gvts_users(@gvts);", gvts, writer, ct);
 			writer.WriteEndObject();
 			await writer.FlushAsync(ct);
 		} else Error.E403(ctx,true);
@@ -49,7 +49,7 @@ public static class Prieigos {
 					} else { Error.E500(ctx,true,"Neįmanoma sukurti vartotojo"); return; }
 				}
 				if(await AddUser(gvts,guid,user.Admin,ct) is null) {
-					var rle = await new DBExec($"SELECT public.gvts_group(@gvts,@adm);",("@gvts",gvts),("@adm",user.Admin)).ExecuteScalar<string?>(ct);
+					var rle = await new DBExec($"SELECT g9.gvts_group(@gvts,@adm);",("@gvts",gvts),("@adm",user.Admin)).ExecuteScalar<string?>(ct);
 					if(rle is not null) { Error.E422(ctx,true,rle); return; }
 				}
 				await AddUser(gvts,guid,user.Admin,ct);
@@ -98,9 +98,9 @@ public static class Prieigos {
 			writer.WriteStartObject();			
 			var prm = new DBParams(("@gvts", gvts));
 			writer.WritePropertyName("Deklaracijos");
-			await DBExtensions.PrintArray("SELECT \"ID\",\"Metai\",\"Stebesenos\",\"Statusas\" FROM public.v_deklar WHERE \"GVTS\"=@gvts and \"Statusas\" in (1,2);", prm, writer, ct, PrieigosApiVal);
+			await DBExtensions.PrintArray("SELECT \"ID\",\"Metai\",\"Stebesenos\",\"Statusas\" FROM g9.v_deklar WHERE \"GVTS\"=@gvts and \"Statusas\" in (1,2);", prm, writer, ct, PrieigosApiVal);
 			writer.WritePropertyName("Raktai");
-			await DBExtensions.PrintArray("SELECT * FROM public.v_deklar_keys WHERE \"GVTS\"=@gvts;", prm, writer, ct);
+			await DBExtensions.PrintArray("SELECT * FROM g9.v_deklar_keys WHERE \"GVTS\"=@gvts;", prm, writer, ct);
 			writer.WriteEndObject();
 			await writer.FlushAsync(ct);
 		}
