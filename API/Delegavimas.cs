@@ -66,7 +66,7 @@ public static class Prieigos {
 			ctx.Response.ContentType="application/json";
 			if(usr.ID==user) Error.E422(ctx,true,"Vartotojas negali pašalinti pats save.");
 			else {
-				new DBExec($"DELETE FROM app.roles WHERE role_gvts={gvts} and role_user=@user;","@usr",user).Execute();
+				new DBExec($"DELETE FROM app.roles WHERE role_gvts={gvts} and role_user=@usr;","@usr",user).Execute();
 			}
 			ctx.Response.StatusCode=204;
 			await ctx.Response.CompleteAsync();
