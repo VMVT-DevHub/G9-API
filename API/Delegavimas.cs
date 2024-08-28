@@ -46,7 +46,7 @@ public static class Prieigos {
 					var usrx = await new DBExec("SELECT role_id FROM app.roles WHERE role_gvts=@gvts and role_user=@usr;",("@gvts",gvts),("@usr",dt.Id)).ExecuteScalar<long>(ct);
 					if(usrx>0) { Error.E400(ctx,true,"Šis vartotojas jau turi prieigą"); return; }
 				}
-				await new DBExec("INSERT INTO app.users(user_id,user_fname,user_lname) VALUES (@id,@fname,@lname) WHERE NOT EXISTS (SELECT 1 FROM app.users WHERE user_id=@id);", ("@id",dt.Id),("@fname",dt.FName),("@lname",dt.LName)).Execute(ct);
+				await new DBExec("INSERT INTO app.users(user_id,user_fname,user_lname) SELECT @id,@fname,@lname WHERE NOT EXISTS (SELECT 1 FROM app.users WHERE user_id=@id);", ("@id",dt.Id),("@fname",dt.FName),("@lname",dt.LName)).Execute(ct);
 				await new DBExec("INSERT INTO app.roles(role_gvts,role_user,role_admin) VALUES (@gvts,@usr,@adm);",("@gvts",gvts),("@usr",dt.Id),("@adm",user.Admin)).Execute(ct);
 			}
 			ctx.Response.ContentType="application/json";
