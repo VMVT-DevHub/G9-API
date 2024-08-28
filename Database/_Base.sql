@@ -95,6 +95,7 @@ DO LANGUAGE 'plpgsql' $$ BEGIN
 	CREATE OR REPLACE VIEW g9.v_rodikliai_suvedimas AS SELECT rks_id as "ID", rks_suvedimas as "Suvedimas", rod_kodas as "Kodas", rks_date as "Data", rks_reiksme as "Reiksme", rks_deklar as "Deklaracija" FROM g9.reiksmes LEFT JOIN g9.rodikliai ON (rks_rodiklis=rod_id);
 	CREATE OR REPLACE VIEW g9.lkp_suvedimo_tipas AS SELECT lkp_num AS key, lkp_value AS val FROM g9.lookup WHERE lkp_group = 'SuvedimoTipas';
 	CREATE OR REPLACE VIEW g9.v_deklar_keys AS SELECT apk_deklar "ID", apk_uid "RaktoID", apk_deklar AS "Deklaracija", dkl_gvts AS "GVTS", apk_exp "GaliojaIki", apk_date "Sukurtas", CONCAT(user_fname,' ',user_lname) "Autorius" FROM g9.deklaravimas LEFT JOIN app.api_keys on (dkl_id=apk_deklar) LEFT JOIN app.users on (apk_user_id=user_id) WHERE dkl_status in (1,2) and apk_id is not null and apk_del=false;
+	CREATE OR REPLACE VIEW app.v_users AS SELECT user_id "ID", user_fname "FName", user_lname "LName", user_email "Email", user_phone "Phone" FROM app.users;
 END $$;
 
 

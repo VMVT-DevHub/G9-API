@@ -71,6 +71,13 @@ public class User {
 	private static User Login(User usr, HttpContext ctx){
 		new DBExec("INSERT INTO app.log_login (log_user,log_ip,log_ua,log_data) VALUES (@id,@ip,@ua,@data::jsonb);",
 			("@id",usr.ID),("@ip",ctx.GetIP()),("@ua",ctx.GetUA()),("@data",JsonSerializer.Serialize(usr))).Execute();
+
+		if(new DBExec("SELECT 1 FROM app.users WHERE user_id=@id;","@id",usr.ID).ExecuteScalar<int>()==1) 
+			new DBExec("UPDATE app.users SET user_fname=@fname, user_lname=@lname, user_email=@email, user_phone=@phone, user_dt_login=timezone('utc'::text, now()) WHERE user_id=@id;",
+				("@id",usr.ID),("@fname",usr.FName),("@lname",usr.LName),("@email",usr.Email),("@phone",usr.Phone)).Execute();
+		else 
+			new DBExec("INSERT INTO app.users(user_id,user_fname,user_lname,user_email,user_phone,user_dt_login) VALUES (@id,@fname,@lname,@email,@phone,timezone('utc'::text, now()));",
+				("@id",usr.ID),("@fname",usr.FName),("@lname",usr.LName),("@email",usr.Email),("@phone",usr.Phone)).Execute();
 		return usr.GetRoles();
 	}
 

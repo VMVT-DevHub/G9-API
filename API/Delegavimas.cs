@@ -23,7 +23,7 @@ public static class Prieigos {
 			writer.WritePropertyName("GVTS");
 			await DBExtensions.PrintArray("SELECT * FROM g9.v_gvts WHERE \"ID\" = ANY(@gvts);", gvts, writer, ct);
 			writer.WritePropertyName("Users");
-			await DBExtensions.PrintArray("SELECT * FROM g9.v_gvts_users WHERE \"GVTS\" IN (@gvts);", gvts, writer, ct);
+			await DBExtensions.PrintArray("SELECT * FROM g9.v_gvts_users WHERE \"GVTS\" = ANY(@gvts);", gvts, writer, ct);
 			writer.WriteEndObject();
 			await writer.FlushAsync(ct);
 		} else Error.E403(ctx,true);
@@ -46,6 +46,7 @@ public static class Prieigos {
 					var usrx = await new DBExec("SELECT role_id FROM app.roles WHERE role_gvts=@gvts and role_user=@usr;",("@gvts",gvts),("@usr",dt.Id)).ExecuteScalar<long>(ct);
 					if(usrx>0) { Error.E400(ctx,true,"Šis vartotojas jau turi prieigą"); return; }
 				}
+				await new DBExec("INSERT INTO app.users(user_id,user_fname,user_lname) VALUES (@id,@fname,@lname) WHERE NOT EXISTS (SELECT 1 FROM app.users WHERE user_id=@id);", ("@id",dt.Id),("@fname",dt.FName),("@lname",dt.LName)).Execute(ct);
 				await new DBExec("INSERT INTO app.roles(role_gvts,role_user,role_admin) VALUES (@gvts,@usr,@adm);",("@gvts",gvts),("@usr",dt.Id),("@adm",user.Admin)).Execute(ct);
 			}
 			ctx.Response.ContentType="application/json";
