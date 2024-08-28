@@ -46,7 +46,7 @@ public class Auth {
 	static Auth() {
 		HClient = new(){
 			Timeout = new TimeSpan(0,0,Config.GetInt("Auth", "Timeout", 15)), 
-			BaseAddress = new Uri($"{Config.GetVal("Auth", "Host")}/")
+			BaseAddress = new Uri($"{Config.GetVal("Auth", "Host")}/")			
 		};
 		var tkn = Config.GetText("Auth", "Token");
 		if(!string.IsNullOrEmpty(tkn)) HClient.DefaultRequestHeaders.Add("X-Api-Key", tkn);
@@ -59,15 +59,14 @@ public class Auth {
 	/// <param name="ct"></param>
 	public static async Task<AuthRequest> GetAuth(HttpContext ctx, string? r, CancellationToken ct){
 		LockIP(ctx);
-		if(!ct.IsCancellationRequested) {
-			var msg = new StringContent($" ");			
+		if(!ct.IsCancellationRequested) {			
 			try {
-				using var response = await HClient.PostAsync(Config.GetVal("Auth","GetSignin","/auth/sign"), msg, ct);
+				using var response = await HClient.GetAsync("", ct);
 				var rsp = await response.Content.ReadAsStringAsync(ct);
 				if(response.IsSuccessStatusCode){
 					var tck = JsonSerializer.Deserialize<AuthTicket>(rsp);					
-					if(tck?.Ticket is not null){
-						var ath = new AuthRequest((Guid)tck.Ticket) { IP=ctx.GetIP(), Return = r };
+					if(tck?.Token is not null){
+						var ath = new AuthRequest((Guid)tck.Token) { IP=ctx.GetIP(), Return = r ?? Config.GetVal("Auth", "Return") };
 						Redirect.TryAdd(ath.Ticket??new(),ath);
 						ctx.Response.Redirect(tck.Url??"/");
 						return ath;
@@ -84,11 +83,10 @@ public class Auth {
 	/// <returns></returns>
 	public static AuthRequest SessionInit(AuthRequest req, HttpContext ctx){
 		var usr=req.User;
-		if(usr is not null && long.TryParse(usr.AK, out var ak)){
-			var usl = User.Login(ak,FixCase(usr.FName),FixCase(usr.LName),usr.Email,usr.Phone,usr.CompanyCode,ctx);
+		if(usr?.Id is not null){
+			var usl = User.Login(usr.Id??new(),FixCase(usr.FName),FixCase(usr.LName),usr.Email,usr.Phone,usr.CompanyCode,ctx);
 			if(usl is UserError err) return new AuthRequestError(err.Code,err.Message,JsonSerializer.Serialize(err.ErrorData));
 			Session.CreateSession(usl,ctx);
-			usr.AK=null;
 			return req;
 		}
 		return new AuthRequestError(1014,"Vartotojo kodas neatpažintas",JsonSerializer.Serialize(usr));
@@ -96,30 +94,49 @@ public class Auth {
 	private static string FixCase(string? txt) => System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(txt?.ToLower()??"");
 
 	/// <summary>Vartotojo autorizacijos tikrinimas</summary>
+	/// <param name="token">Autorizacijos kodas</param>
 	/// <param name="ticket">Autorizacijos kodas</param>
 	/// <param name="ctx"></param>
 	/// <param name="ct"></param>
-	public static async Task<AuthRequest> GetUser(Guid ticket, HttpContext ctx, CancellationToken ct){
-		if(Redirect.TryRemove(ticket, out var tck)){
+	public static async Task<AuthRequest> GetUser(Guid token, Guid ticket, HttpContext ctx, CancellationToken ct){
+		if(Redirect.TryRemove(token, out var tck) && token!=ticket){
 			if(tck.IP==ctx.GetIP()){
-				if(tck.Timeout>DateTime.UtcNow){			
+				if(tck.Timeout>DateTime.UtcNow){
 					try {
-						using var response = await HClient.GetAsync($"{Config.GetVal("Auth","GetUser",$"/auth/data")}?ticket={ticket}", ct);
+						using var response = await HClient.GetAsync($"{token}", ct);
 						var rsp = await response.Content.ReadAsStringAsync(ct);
 						if(response.IsSuccessStatusCode){
 							var usr = JsonSerializer.Deserialize<AuthUser>(rsp);
-							new DBExec("insert into app.log_login (log_data) VALUES (@dt);","@dt",rsp).Execute();
-							if(!string.IsNullOrEmpty(usr?.AK)){
+							if(usr?.Id is not null){
 								tck.User=usr; return tck; 
 							} else return new AuthRequestError(1010,"Negalimas prisijungimas",rsp);
 						} else return new AuthRequestError(1009,"Autorizacijos klaida",rsp);
 					} catch (Exception ex) { return new AuthRequestError(1008,"Prisijungimo validacijos klaida",ex.Message); }
 				} else return new AuthRequestError(1007,"Baigėsi prisijungimui skirtas laikas",tck.Timeout.ToString("u"));
 			} else return new AuthRequestError(1006,"Neteisingas prisijungimo adresas",tck.Timeout.ToString("u"));
-		} else return new AuthRequestError(1005,"Neatpažinta autorizacija",ticket.ToString());
+		} else return new AuthRequestError(1005,"Neatpažinta autorizacija",token.ToString());
+	}
+
+	/// <summary>Gauti vartotojo duomenis pagal ID ar AK</summary>
+	/// <param name="id">Vartotojo ID</param>
+	/// <param name="ct"></param>
+	/// <returns>Vartotojo informacija</returns>
+	public static async Task<AuthUser?> GetUser(object id, CancellationToken ct) {
+		using var response = await HClient.GetAsync($"user/{id}", ct);
+		var rsp = await response.Content.ReadAsStringAsync(ct);
+		return response.IsSuccessStatusCode ? JsonSerializer.Deserialize<AuthUser>(rsp) : null;
+	}
+	
+	/// <summary>Gauti vartotojo duomenis pagal ID ar AK</summary>
+	/// <param name="usr">Vartotojo duomenys</param>
+	/// <param name="ct"></param>
+	/// <returns>Vartotojo informacija</returns>
+	public static async Task<AuthUser?> SetUser(AuthUser usr, CancellationToken ct) {
+		using var response = await HClient.PostAsJsonAsync($"user", usr, ct);
+		var rsp = await response.Content.ReadAsStringAsync(ct);
+		return response.IsSuccessStatusCode ? JsonSerializer.Deserialize<AuthUser>(rsp) : null;
 	}
 }
-
 
 /// <summary>Autorizacijos apsauga</summary>
 public class AuthLock {
@@ -186,6 +203,12 @@ public class AuthRequestError : AuthRequest {
 
 /// <summary>Vartotojo informacija</summary>
 public class AuthUser {
+	/// <summary>Vartotojo ID</summary>
+	[JsonPropertyName("id")] public Guid? Id { get; set; }
+	/// <summary>Vartotojo AK</summary>
+	[JsonPropertyName("ak")] public long? AK { get; set; }
+	/// <summary>Pilnas vardas</summary>
+	[JsonPropertyName("name")] public string? Name { get; set; }
 	/// <summary>Vardas</summary>
 	[JsonPropertyName("firstName")] public string? FName { get; set; }
 	/// <summary>Pavardė</summary>
@@ -193,24 +216,21 @@ public class AuthUser {
 	/// <summary>El. Paštas</summary>
 	[JsonPropertyName("email")] public string? Email { get; set; }
 	/// <summary>Tel. Nr.</summary>
-	[JsonPropertyName("phoneNumber")] public string? Phone { get; set; }
-	/// <summary>Asmens kodas</summary>
-	[JsonPropertyName("lt-personal-code")] public string? AK { get; set; }
+	[JsonPropertyName("phone")] public string? Phone { get; set; }
 	/// <summary>Juridinio asmens kodas</summary>
-	[JsonPropertyName("lt-company-code")] public string? CompanyCode { get; set; }
+	[JsonPropertyName("companyCode")] public string? CompanyCode { get; set; }
 	/// <summary>Juridinio asmens pavadinimas</summary>
 	[JsonPropertyName("companyName")] public string? CompanyName { get; set; }
+
 }
 
 
 /// <summary>VIISP Autorizacija</summary>
 public class AuthTicket {
-	/// <summary>AUtorizacijos kodas</summary>
-	[JsonPropertyName("ticket")] public Guid? Ticket { get; set; }
-	/// <summary>VIISP adresas</summary>
-	[JsonPropertyName("host")] public string? Host { get; set; }
+	/// <summary>Autorizacijos kodas</summary>
+	[JsonPropertyName("token")] public Guid? Token { get; set; }
 	/// <summary>VIISP peradresavimas</summary>
-	[JsonPropertyName("url")] public string? Url { get; set; }
+	[JsonPropertyName("authUrl")] public string? Url { get; set; }
 }
 
 /// <summary>VIISP Autorizacijos atsakas</summary>

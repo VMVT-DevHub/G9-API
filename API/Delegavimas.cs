@@ -23,7 +23,7 @@ public static class Prieigos {
 			writer.WritePropertyName("GVTS");
 			await DBExtensions.PrintArray("SELECT * FROM g9.v_gvts WHERE \"ID\" = ANY(@gvts);", gvts, writer, ct);
 			writer.WritePropertyName("Users");
-			await DBExtensions.PrintArray("SELECT * FROM g9.gvts_users(@gvts);", gvts, writer, ct);
+			await DBExtensions.PrintArray("SELECT * FROM g9.v_gvts_users WHERE \"GVTS\" IN (@gvts);", gvts, writer, ct);
 			writer.WriteEndObject();
 			await writer.FlushAsync(ct);
 		} else Error.E403(ctx,true);
@@ -36,31 +36,24 @@ public static class Prieigos {
 	public static async Task Set(HttpContext ctx, long gvts, DelegavimasSet user, CancellationToken ct){
 		var usr = ctx.GetUser();
 		if(usr?.Admin?.Contains(gvts) == true) {
-			ctx.Response.ContentType="application/json";
-			var guid = await new DBExec("SELECT app.user_check(@ak);","@ak",user.AK).ExecuteScalar<Guid?>(ct);
-			if(usr.ID==guid) Error.E422(ctx,true,"Vartotojas negali deleguoti savęs.");
+			var dt = await VIISP.Auth.GetUser(user.AK,ct);
+			if(usr.Id==dt?.Id) { Error.E422(ctx,true,"Vartotojas negali deleguoti savęs."); return; }
 			else {
-				if(guid is null){
-					using var db = new DBExec("SELECT * FROM app.user_add(@ak,@fname,@lname,null,null);",("@ak",user.AK),("@fname",user.FName),("@lname",user.LName));
-					using var rdr = await db.GetReader(ct);
-					if(await rdr.ReadAsync(ct)){
-						if(await rdr.IsDBNullAsync(0,ct)) { Error.E422(ctx,true,rdr.GetStringN(1)??"Nežinoma klaida"); return; }
-						guid = rdr.GetGuid(0);
-					} else { Error.E500(ctx,true,"Neįmanoma sukurti vartotojo"); return; }
+				if(dt?.Id is null){
+					dt = await VIISP.Auth.SetUser(new(){ AK=user.AK, FName=user.FName, LName=user.LName }, ct);
+					if(dt?.Id is null) { Error.E500(ctx,true,"Neįmanoma sukurti vartotojo"); return; }
+				} else {
+					var usrx = await new DBExec("SELECT role_id FROM app.roles WHERE role_gvts=@gvts and role_user=@usr;",("@gvts",gvts),("@usr",dt.Id)).ExecuteScalar<long>(ct);
+					if(usrx>0) { Error.E400(ctx,true,"Šis vartotojas jau turi prieigą"); return; }
 				}
-				if(await AddUser(gvts,guid,user.Admin,ct) is null) {
-					var rle = await new DBExec($"SELECT g9.gvts_group(@gvts,@adm);",("@gvts",gvts),("@adm",user.Admin)).ExecuteScalar<string?>(ct);
-					if(rle is not null) { Error.E422(ctx,true,rle); return; }
-				}
-				await AddUser(gvts,guid,user.Admin,ct);
-				ctx.Response.StatusCode=204;
-				await ctx.Response.CompleteAsync();
+				await new DBExec("INSERT INTO app.roles(role_gvts,role_user,role_admin) VALUES (@gvts,@usr,@adm);",("@gvts",gvts),("@usr",dt.Id),("@adm",user.Admin)).Execute(ct);
 			}
+			ctx.Response.ContentType="application/json";
+			ctx.Response.StatusCode=204;
+			await ctx.Response.CompleteAsync();
 		}
 		else Error.E403(ctx,true);
-	}
-	private static async Task<long?> AddUser(long gvts, Guid? guid, bool adm, CancellationToken ct) =>
-		await new DBExec($"SELECT id FROM app.user_role_add(@usr,'g9.{gvts}{(adm?".admin":"")}');",("@usr",guid),("@role",gvts)).ExecuteScalar<long?>(ct);
+	}		
 	
 	
 	/// <summary>Pašalinti deleguotą asmenį</summary>
@@ -71,9 +64,9 @@ public static class Prieigos {
 		var usr = ctx.GetUser();
 		if(usr?.Admin?.Contains(gvts) == true) {
 			ctx.Response.ContentType="application/json";
-			if(usr.ID==user) Error.E422(ctx,true,"Vartotojas negali pašalinti pats save.");
+			if(usr.Id==user) Error.E422(ctx,true,"Vartotojas negali pašalinti pats save.");
 			else {
-				new DBExec($"SELECT app.user_role_del(@usr,'g9.{gvts}'), app.user_role_del(@usr,'g9.{gvts}.admin');","@usr",user).Execute();
+				new DBExec($"DELETE FROM app.roles WHERE role_gvts={gvts} and role_user=@user;","@usr",user).Execute();
 			}
 			ctx.Response.StatusCode=204;
 			await ctx.Response.CompleteAsync();
@@ -144,7 +137,7 @@ public static class Prieigos {
 			}
 
 			if(dt.GaliojaIki>date) dt.GaliojaIki=date;
-			using var db = new DBExec("SELECT id,key,deklar,exp FROM app.api_key_add(@key,@gvts,@deklar,@exp,@usr)",("@key",key),("@gvts",gvts),("@deklar",dt.Deklaracija),("@exp",dt.GaliojaIki),("@usr",usr.ID));
+			using var db = new DBExec("SELECT id,key,deklar,exp FROM app.api_key_add(@key,@gvts,@deklar,@exp,@usr)",("@key",key),("@gvts",gvts),("@deklar",dt.Deklaracija),("@exp",dt.GaliojaIki),("@usr",usr.Id));
 			using var rdr = await db.GetReader(ct);
 			ctx.Response.ContentType="application/json";
 			if(await rdr.ReadAsync(ct)){

@@ -1,6 +1,7 @@
 using App.VIISP;
 using App.Users;
 using App.Auth;
+using System.Security.Principal;
 
 namespace App.API;
 
@@ -34,11 +35,12 @@ public static class Auth {
 
 	/// <summary>Vartotojo prisijungimas</summary>
 	/// <param name="ctx">Http Context</param>
+	/// <param name="token">Viisp užklausos rektas</param>
 	/// <param name="ct">Cancellation Token</param>
-	public static async Task Evartai(HttpContext ctx, CancellationToken ct){
+	public static async Task Evartai(HttpContext ctx, Guid token, CancellationToken ct){
 		if(ctx.Request.HasFormContentType && ctx.Request.Form.TryGetValue("ticket", out var tks)){
 			if(Guid.TryParse(tks, out var ticket)){
-				var tkn = await VIISP.Auth.GetUser(ticket,ctx,ct);
+				var tkn = await VIISP.Auth.GetUser(token,ticket,ctx,ct);
 				if(tkn.Valid(ctx) && tkn?.User is not null) {
 					tkn = VIISP.Auth.SessionInit(tkn, ctx);				
 					if(tkn.Valid(ctx)) {
@@ -57,10 +59,10 @@ public static class Auth {
 	/// <param name="ct">Cancellation Token</param>
 	public static async Task Impersonate(HttpContext ctx, long ja, CancellationToken ct){
 		if(ja==1234){
-			VIISP.Auth.SessionInit(new(){ User=new(){ AK="10000001234", Email="test@vmvt.lt", Phone="+37060000000", FName="Test", LName="Test"}}, ctx);
+			VIISP.Auth.SessionInit(new(){ User=new(){ Email="test@vmvt.lt", Phone="+37060000000", FName="Test", LName="Test"}}, ctx);
 		}
 		if(ctx.GetAuth()){		
-			using var db = new DBExec("SELECT ja_title,ja_adresas FROM jar.data WHERE ja_id=@id;","@id",ja);
+			using var db = new DBExec("SELECT ja_pavadinimas,adresas FROM jar.data WHERE ja_kodas=@id;","@id",ja);
 			using var rdr = await db.GetReader(ct);
 			var usr = ctx.GetUser();
 			if(usr is not null && rdr.HasRows && await rdr.ReadAsync(ct)){

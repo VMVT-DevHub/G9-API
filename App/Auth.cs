@@ -41,6 +41,8 @@ public class Error {
 		return Respond(err,ctx,print);
 	}
 
+	/// <summary>Užklausos klaida</summary>
+	public static E400 E400(HttpContext ctx, bool print=false, params string[] str) => Respond<E400>(ctx,print,str);
 	/// <summary>Autorizacijos klaida</summary>
 	public static E401 E401(HttpContext ctx, bool print=false) => Respond(Er401,ctx,print);
 	private static E401 Er401 {get;} = new();
@@ -65,6 +67,22 @@ public class ErrorB : Error {
 	public virtual List<string> Details { get; set; } = new();
 }
 
+
+/// <summary>Užklausos klaida</summary>
+public class E400 : ErrorB {
+	/// <summary>Klaidos kodas</summary>
+	/// <example>400</example>
+	public override int Code { get; set; } = 400;
+	/// <summary>Klaidos statusas</summary>
+	/// <example>Bad Request</example>
+	public string Status { get; set; } = "Bad Request";
+	/// <summary>Klaidos Žinutė</summary>
+	/// <example>Užklausos klaida</example>
+	public string Message { get; set; } = "Užklausos klaida";
+	/// <summary>Klaidos informacija</summary>
+	/// <example>Validacijos informacija</example>
+	public override List<string> Details { get; set; } = [];
+}
 
 /// <summary>Vartotojo autorizacijos klaida</summary>
 public class E401 : Error {

@@ -1,3 +1,4 @@
+using System.Data;
 using System.Text.Json;
 using Microsoft.AspNetCore.Identity;
 using Npgsql;
@@ -391,8 +392,8 @@ public static class DBExtensions {
 		var ret = new Dictionary<string,string>();
 		using var db = new DBExec($"SELECT key,val FROM g9.{view};");
 		using var rdr = db.GetReader();
-		var isint = rdr.GetFieldType(0) == typeof(int);
-		while(rdr.Read()) ret[(isint?rdr.GetIntN(0).ToString():rdr.GetStringN(0))??""]=rdr.GetStringN(1)??"";
+		var tpe = rdr.GetFieldType(0); var isint =  tpe == typeof(int); var islong = tpe == typeof(long);
+		while(rdr.Read()) ret[(isint?rdr.GetIntN(0).ToString():(islong?rdr.GetLongN(0).ToString():rdr.GetStringN(0)))??""]=rdr.GetStringN(1)??"";
 		return ret;
 	}
 	

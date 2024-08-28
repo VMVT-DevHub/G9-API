@@ -39,7 +39,7 @@ public static class Reiksmes {
 		using var rdr = await db.GetReader(ct);
 		if(rdr.Read()){
 			var usr = ctx.GetUser();
-			if(usr?.ID is not null && usr.Roles?.Contains(rdr.GetInt64(0)) == true){			
+			if(usr?.Id is not null && usr.Roles?.Contains(rdr.GetInt64(0)) == true){			
 				if(rdr.GetInt32(1)==3) Error.E422(ctx,true,$"Negalima keisti jau deklaruotų duomenų");
 				else {
 					var flush = Config.GetInt("DBBatch","Reiksmes",100);
@@ -51,9 +51,9 @@ public static class Reiksmes {
 					foreach(var i in data){
 						if(i.Data.Year!=metai) { Error.E422(ctx,true,"Įrašo data neatitinka deklaruojamų metų"); return; }
 						rod.Add(i.Rodiklis); dte.Add(i.Data); val.Add(i.Reiksme);
-						if(cnt--<1){ await WriteReiksmes(deklaracija,usr.ID,rod,dte,val,ct); cnt=flush;  }
+						if(cnt--<1){ await WriteReiksmes(deklaracija,usr.Id,rod,dte,val,ct); cnt=flush;  }
 					}
-					await WriteReiksmes(deklaracija,usr.ID,rod,dte,val,ct);
+					await WriteReiksmes(deklaracija,usr.Id,rod,dte,val,ct);
 					//TODO: Log stuff;
 					ctx.Response.StatusCode=204;
 					await ctx.Response.CompleteAsync();
