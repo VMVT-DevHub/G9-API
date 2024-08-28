@@ -59,7 +59,7 @@ public static class Auth {
 	/// <param name="ct">Cancellation Token</param>
 	public static async Task Impersonate(HttpContext ctx, long ja, CancellationToken ct){
 		if(ja==1234){
-			VIISP.Auth.SessionInit(new(){ User=new(){ Email="test@vmvt.lt", Phone="+37060000000", FName="Test", LName="Test"}}, ctx);
+			VIISP.Auth.SessionInit(new(){ User=new(){ Id=new Guid(), Email="test@vmvt.lt", Phone="+37060000000", FName="Test", LName="Test"}}, ctx);
 		}
 		if(ctx.GetAuth()){		
 			using var db = new DBExec("SELECT ja_pavadinimas,adresas FROM jar.data WHERE ja_kodas=@id;","@id",ja);
