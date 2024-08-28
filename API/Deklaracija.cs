@@ -72,7 +72,7 @@ public static class Deklaracija {
 				else if(stat==3) Error.E422(ctx, true, $"Negalima keisti jau deklaruotų duomenų");
 				else {
 					var param = new DBParams(("@id",deklaracija), ("@kiekis",dcl.Kiekis),("@vartot",dcl.Vartotojai),("@medziag",dcl.RuosimoMedziagos),
-						("@name",usr.FullName),("@usr",usr.Id));
+						("@name",usr.FullName),("@usr",usr.ID));
 					await new DBExec("UPDATE g9.deklaravimas SET dkl_kiekis=@kiekis, dkl_vartot=@vartot, dkl_medziagos=@medziag, "+
 						"dkl_modif_date=timezone('utc',now()), dkl_modif_user=@name, dkl_modif_user_id=@usr WHERE dkl_id=@id;", param).Execute(ct);
 					

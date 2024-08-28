@@ -24,7 +24,7 @@ public static class Deklaravimas {
 		using var writer = new Utf8JsonWriter(ctx.Response.BodyWriter, options);
 		writer.WriteStartObject();
 		
-		var prms = new DBParams(("@deklar", deklaracija),("@usr", ctx.GetUser()?.Id));
+		var prms = new DBParams(("@deklar", deklaracija),("@usr", ctx.GetUser()?.ID));
 		if(tipas is null || tipas == NeatitikciuTipas.Trukumas){
 			writer.WritePropertyName("Trukumas");
 			await DBExtensions.PrintArray("SELECT * FROM g9.valid_trukumas_set(@deklar,@usr);", prms, writer, ct, null, error?.Trukumas);
@@ -53,7 +53,7 @@ public static class Deklaravimas {
 	public static async Task Submit(HttpContext ctx, int deklaracija, CancellationToken ct){
 		if(await Validate(ctx,deklaracija,ct)){
 			var usr = ctx.GetUser()??new();
-			var prms = new DBParams(("@deklar",deklaracija),("@usr",usr.Id));			
+			var prms = new DBParams(("@deklar",deklaracija),("@usr",usr.ID));			
 			await new DBExec("SELECT g9.valid_trukumas_set(@deklar,@usr), g9.valid_kartojasi_set(@deklar,@usr), g9.valid_virsija_set(@deklar,@usr);", prms).Execute(ct);
 			using var db = new DBExec("SELECT kartojasi, trukumas, virsija FROM g9.valid_nepatvirtinta(@deklar);",prms);
 			using var rdr = await db.GetReader(ct);
@@ -65,7 +65,7 @@ public static class Deklaravimas {
 				};
 				
 				if(!ret.Klaida){
-					var param = new DBParams(("@id",deklaracija),("@name",usr.FullName),("@usr",usr.Id));
+					var param = new DBParams(("@id",deklaracija),("@name",usr.FullName),("@usr",usr.ID));
 					await new DBExec("UPDATE g9.deklaravimas SET dkl_status=3, dkl_deklar_date=timezone('utc',now()), dkl_deklar_user=@name, dkl_deklar_user_id=@usr,"+
 						" dkl_modif_date=timezone('utc',now()), dkl_modif_user=@name, dkl_modif_user_id=@usr WHERE dkl_id=@id;", param).Execute(ct);
 					ret.Statusas = "Deklaruota";
@@ -105,7 +105,7 @@ public static class Deklaravimas {
 	private static readonly string SqlUpdateKartojasi = "UPDATE g9.valid_kartojasi SET vld_tvirtinti=@tvrt,vld_pastabos=@pstb,vld_user=@usr,vld_date_modif=timezone('utc', now()) WHERE vld_id=@id and vld_deklar=@deklar;";
 	private static readonly string SqlUpdateVirsija = "UPDATE g9.valid_virsija SET vld_tvirtinti=@tvrt,vld_pastabos=@pstb,vld_user=@usr,vld_date_modif=timezone('utc', now()),vld_nereiksm=@nereik,vld_nereiksm_apras=@nereikapras,vld_zmones=@zmones,vld_loq_reiksme=@loqr,vld_loq_verte=@loqv,vld_statusas=@stat,vld_tipas=@tipas,vld_priez=@tspriez,vld_veiksmas=@tsveiksm,vld_pradzia=@tsprad,vld_pabaiga=@tspab WHERE vld_deklar=@deklar and vld_id=@id;";
 	private static async Task<Err> Save(HttpContext ctx, int deklaracija, NeatitiktysSet data, CancellationToken ct){
-		var usr = ctx.GetUser()?.Id; var err = new Err();
+		var usr = ctx.GetUser()?.ID; var err = new Err();
 		using var db = new DBExec(""){ UseTransaction=true };
 		if(data.Trukumas?.Count>0){
 			var param = new DBParams(("@deklar",deklaracija),("@usr",usr),("@id",0),("@tvirt",false),("@past",""));

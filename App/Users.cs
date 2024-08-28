@@ -9,7 +9,7 @@ namespace App.Users;
 /// <summary>Vartotojo informacija</summary>
 public class User {
 	/// <summary>Sisteminis vartotojo id</summary>
-	public Guid? Id { get; set; }
+	public Guid? ID { get; set; }
 	/// <summary>Vardas</summary>
 	public string? FName { get; set; }
 	/// <summary>Pavardė</summary>
@@ -41,7 +41,7 @@ public class User {
 	/// <summary>Gauti vartotojo roles</summary>
 	/// <returns></returns>
 	public User GetRoles(){
-		using var db = new DBExec("SELECT role_gvts, role_admin FROM app.roles WHERE role_user=@usr","@usr",Id);
+		using var db = new DBExec("SELECT role_gvts, role_admin FROM app.roles WHERE role_user=@usr","@usr",ID);
 		using var rdr = db.GetReader(); Roles = []; Admin = [];
 
 		if(JA is not null){
@@ -66,11 +66,11 @@ public class User {
 	/// <param name="ctx"></param>
 	/// <returns>Prisijungęs vartotojas</returns>
 	public static User Login(Guid id, string fname, string lname, string? email, string? phone, string? ja, HttpContext ctx)
-		=> Login(new User(){ Id=id, FName=fname, LName=lname, Email=email, Phone=phone}.GetJA(ja) ,ctx);
+		=> Login(new User(){ ID=id, FName=fname, LName=lname, Email=email, Phone=phone}.GetJA(ja) ,ctx);
 
 	private static User Login(User usr, HttpContext ctx){
 		new DBExec("INSERT INTO app.log_login (log_user,log_ip,log_ua,log_data) VALUES (@id,@ip,@ua,@data::jsonb);",
-			("@id",usr.Id),("@ip",ctx.GetIP()),("@ua",ctx.GetUA()),("@data",JsonSerializer.Serialize(usr))).Execute();
+			("@id",usr.ID),("@ip",ctx.GetIP()),("@ua",ctx.GetUA()),("@data",JsonSerializer.Serialize(usr))).Execute();
 		return usr.GetRoles();
 	}
 

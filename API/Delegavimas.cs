@@ -37,7 +37,7 @@ public static class Prieigos {
 		var usr = ctx.GetUser();
 		if(usr?.Admin?.Contains(gvts) == true) {
 			var dt = await VIISP.Auth.GetUser(user.AK,ct);
-			if(usr.Id==dt?.Id) { Error.E422(ctx,true,"Vartotojas negali deleguoti savęs."); return; }
+			if(usr.ID==dt?.Id) { Error.E422(ctx,true,"Vartotojas negali deleguoti savęs."); return; }
 			else {
 				if(dt?.Id is null){
 					dt = await VIISP.Auth.SetUser(new(){ AK=user.AK, FName=user.FName, LName=user.LName }, ct);
@@ -64,7 +64,7 @@ public static class Prieigos {
 		var usr = ctx.GetUser();
 		if(usr?.Admin?.Contains(gvts) == true) {
 			ctx.Response.ContentType="application/json";
-			if(usr.Id==user) Error.E422(ctx,true,"Vartotojas negali pašalinti pats save.");
+			if(usr.ID==user) Error.E422(ctx,true,"Vartotojas negali pašalinti pats save.");
 			else {
 				new DBExec($"DELETE FROM app.roles WHERE role_gvts={gvts} and role_user=@user;","@usr",user).Execute();
 			}
@@ -137,7 +137,7 @@ public static class Prieigos {
 			}
 
 			if(dt.GaliojaIki>date) dt.GaliojaIki=date;
-			using var db = new DBExec("SELECT id,key,deklar,exp FROM app.api_key_add(@key,@gvts,@deklar,@exp,@usr)",("@key",key),("@gvts",gvts),("@deklar",dt.Deklaracija),("@exp",dt.GaliojaIki),("@usr",usr.Id));
+			using var db = new DBExec("SELECT id,key,deklar,exp FROM app.api_key_add(@key,@gvts,@deklar,@exp,@usr)",("@key",key),("@gvts",gvts),("@deklar",dt.Deklaracija),("@exp",dt.GaliojaIki),("@usr",usr.ID));
 			using var rdr = await db.GetReader(ct);
 			ctx.Response.ContentType="application/json";
 			if(await rdr.ReadAsync(ct)){
