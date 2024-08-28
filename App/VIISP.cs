@@ -124,6 +124,7 @@ public class Auth {
 	public static async Task<AuthUser?> GetUser(object id, CancellationToken ct) {
 		using var response = await HClient.GetAsync($"user/{id}", ct);
 		var rsp = await response.Content.ReadAsStringAsync(ct);
+		Console.WriteLine($"GET USER: {rsp}");
 		return response.IsSuccessStatusCode ? JsonSerializer.Deserialize<AuthUser>(rsp) : null;
 	}
 	
