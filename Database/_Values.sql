@@ -17,19 +17,12 @@ INSERT INTO g9.daznumas (dzn_grupe,dzn_nuo,dzn_iki,dzn_kartai,dzn_laikas,dzn_ste
 	('A',23001,24000,73,1,1),('A',24001,25000,76,1,1),('A',25001,26000,79,1,1),('A',26001,27000,82,1,1),('A',27001,28000,85,1,1),('A',28001,29000,88,1,1),('A',29001,30000,91,1,1),('A',30001,31000,94,1,1),
 	('A',31001,32000,97,1,1),('A',32001,33000,100,1,1),('A',33001,34000,103,1,1),('A',34001,35000,106,1,1),('A',35001,36000,109,1,1),('A',36001,37000,112,1,1),('A',37001,38000,115,1,1),('A',38001,39000,118,1,1),
 	('A',39001,40000,121,1,1),('A',40001,41000,124,1,1),('A',41001,42000,127,1,1),('A',42001,43000,130,1,1),('A',43001,44000,133,1,1),('A',44001,45000,135,1,1),('A',45001,46000,138,1,1),('A',46001,47000,141,1,1),
-	('A',47001,48000,144,1,1),('A',48001,49000,147,1,1),('A',49001,50000,150,1,1),('A',50001,60000,153,1,1),('A+B',0,9,1,1,1),('A+B',10,100,3,1,1),('A+B',101,1000,5,1,1),('A+B',1001,2000,9,1,1),
-	('A+B',2001,3000,12,1,1),('A+B',3001,4000,15,1,1),('A+B',4001,5000,18,1,1),('A+B',5001,5500,21,1,1),('A+B',5501,6000,22,1,1),('A+B',6001,7000,25,1,1),('A+B',7001,8000,28,1,1),('A+B',8001,9000,31,1,1),
-	('A+B',9001,10000,34,1,1),('A+B',10001,11000,34,1,1),('A+B',11001,12000,41,1,1),('A+B',12001,11300,44,1,1),('A+B',13001,14000,47,1,1),('A+B',14001,15000,50,1,1),('A+B',15001,16000,53,1,1),('A+B',16001,17000,56,1,1),
-	('A+B',17001,18000,59,1,1),('A+B',18001,19000,62,1,1),('A+B',19001,20000,65,1,1),('A+B',20001,21000,69,1,1),('A+B',21001,22000,72,1,1),('A+B',22001,23000,75,1,1),('A+B',23001,24000,78,1,1),('A+B',24001,25000,81,1,1),
-	('A+B',25001,26000,84,1,1),('A+B',26001,27000,87,1,1),('A+B',27001,28000,90,1,1),('A+B',28001,29000,93,1,1),('A+B',29001,30000,96,1,1),('A+B',30001,31000,100,1,1),('A+B',31001,32000,103,1,1),('A+B',32001,33000,106,1,1),
-	('A+B',33001,34000,109,1,1),('A+B',34001,35000,112,1,1),('A+B',35001,36000,115,1,1),('A+B',36001,37000,118,1,1),('A+B',37001,38000,121,1,1),('A+B',38001,39000,124,1,1),('A+B',39001,40000,127,1,1),('A+B',40001,41000,131,1,1),
-	('A+B',41001,42000,134,1,1),('A+B',42001,43000,137,1,1),('A+B',43001,44000,140,1,1),('A+B',44001,45000,142,1,1),('A+B',45001,46000,145,1,1),('A+B',46001,47000,148,1,1),('A+B',47001,48000,151,1,1),('A+B',48001,49000,154,1,1),
-	('A+B',49001,50000,157,1,1),('A+B',50001,60000,161,1,1),('B',0,9,0,5,1),('B',10,1000,1,1,1),('B',1001,5500,2,1,1),('B',5501,10000,3,1,1),('B',10001,20000,4,1,1),('B',20001,30000,5,1,1),('B',30001,40000,6,1,1),
-	('B',40001,50000,7,1,1),('B',50001,60000,8,1,1),('Dr1',0,1000,1,1,2),('Dr2',1001,10000,1,1,2),('Dr3',10001,60000,1,1,2),('Rad',0,100,0,6,1),('Rad',101,1000,1,1,1),('Rad',1001,4300,2,1,1),
-	('Rad',4301,7600,3,1,1),('Rad',7601,10000,4,1,1),('Rad',10001,20000,4,1,1),('Rad',20001,30000,5,1,1),('Rad',30001,40000,6,1,1),('Rad',40001,50000,7,1,1),('Rad',50001,60000,8,1,1);
+	('A',47001,48000,144,1,1),('A',48001,49000,147,1,1),('A',49001,50000,150,1,1),('A',50001,60000,153,1,1),('B',0,9,0,5,1),('B',10,1000,1,1,1),('B',1001,5500,2,1,1),('B',5501,10000,3,1,1),('B',10001,20000,4,1,1),
+	('B',20001,30000,5,1,1),('B',30001,40000,6,1,1),('B',40001,50000,7,1,1),('B',50001,60000,8,1,1),('Dr1',0,1000,1,1,2),('Dr2',1001,10000,1,1,2),('Dr3',10001,60000,1,1,2),('Rad',0,100,0,6,1),('Rad',101,1000,1,1,1),
+	('Rad',1001,4300,2,1,1),('Rad',4301,7600,3,1,1),('Rad',7601,10000,4,1,1),('Rad',10001,20000,4,1,1),('Rad',20001,30000,5,1,1),('Rad',30001,40000,6,1,1),('Rad',40001,50000,7,1,1),('Rad',50001,60000,8,1,1);
 
 INSERT INTO g9.lookup(lkp_group,lkp_key,lkp_num,lkp_value,lkp_int,lkp_sort) VALUES
-	('Daznumas','A',null,'A Grupė',null,null),('Daznumas','B',null,'B Grupė',null,null),('Daznumas','A+B',null,'A+B Grupė',null,null),('Daznumas','Rad',null,'Radiologiniai rodikliai',null,null),
+	('Daznumas','A',null,'A Grupė',null,null),('Daznumas','B',null,'B Grupė',null,null),('Daznumas','Rad',null,'Radiologiniai rodikliai',null,null),
 	('RodikliuGrupe','Taip',1,'Mikrobiologiniai rodikliai',null,null),('RodikliuGrupe','Taip',2,'Cheminiai rodikliai',null,null),('VietosTipas',null,1,'Reprezentatyvi vieta pastatų vidaus vandentiekio tinkle',null,null),
 	('VietosTipas',null,2,'Čiaupas patalpoje ar objekte',null,null),('VietosTipas',null,3,'Vieta, kurioje vanduo  išpilstomas į butelius ar talpyklas',null,null),('VietosTipas',null,4,'Vieta, kurioje vanduo naudojamas maisto tvarkymo įmonėje',null,null),
 	('VietosTipas',null,5,'Vieta, kurioje vanduo išteka iš cisternos',null,null),('StebejimoStatusas',null,1,'Įrašas patvirtinamas kaip teisingas',null,null),('StebejimoStatusas',null,2,'Trūksta stebimos vertės, stebima vertė nėra svarbi arba nereikšminga',null,null),
@@ -37,7 +30,7 @@ INSERT INTO g9.lookup(lkp_group,lkp_key,lkp_num,lkp_value,lkp_int,lkp_sort) VALU
 	('Daznumas','Dr3',null,'Drumstumas vandens tiekimo įmonėje',null,null),('RuosimoMedziagos',null,1,'Chloraminas',null,null),('RuosimoMedziagos',null,2,'Flokuliantas, kuriame yra aliuminio',null,null),
 	('RuosimoMedziagos',null,3,'Flokuliantas, kuriame yra geležies',null,null),('RodikliuGrupe',null,6,'Veiklos stebėsenos rodikliai',null,null),('DaznumoLaikas',null,1,'Metai',1,null),('DaznumoLaikas',null,2,'Mėnuo',12,null),
 	('DaznumoLaikas',null,3,'Savaitė',52,null),('DaznumoLaikas',null,4,'Diena',365,null),('DaznumoLaikas',null,5,'Per 6 metus',0,null),('DaznumoLaikas',null,6,'Per 10 metų',0,null),('DaznumoLaikas',null,7,'Nuolat',365,null),
-	('RuosimoDaznumas',null,27,'A+B',1,null),('RuosimoDaznumas',null,43,'A+B',1,null),('RuosimoDaznumas',null,44,'A+B',2,null),('RuosimoDaznumas',null,50,'A+B',3,null),('Statusas',null,1,'Pildoma',null,null),
+	('RuosimoDaznumas',null,27,'A',1,null),('RuosimoDaznumas',null,43,'A',1,null),('RuosimoDaznumas',null,44,'A',2,null),('RuosimoDaznumas',null,50,'A',3,null),('Statusas',null,1,'Pildoma',null,null),
 	('Statusas',null,2,'Deklaruojama',null,null),('Statusas',null,3,'Deklaruota',null,null),('Stebesenos',null,1,'Geriamo vandens stebėsenos',null,null),('RuosimoMedziagos',null,4,'Kitos',null,null),
 	('RodikliuGrupe',null,4,'Radiologiniai rodikliai',null,null),('RodikliuGrupe',null,5,'Dezinfekuoti naudojamų medžiagų likučiai',null,null),('RodikliuGrupe',null,3,'Indikatoriniai rodikliai',null,null),
 	('Stebesenos',null,2,'Veiklos stebėsenos',null,null),('VirsPriezastis',null,1,'Atsitiktinė tarša',null,null),('VirsPriezastis',null,2,'Potvynis',null,null),('VirsPriezastis',null,3,'Protrūkis',null,null),
