@@ -1,4 +1,5 @@
 using App;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace G9.Models;
 
@@ -88,6 +89,15 @@ public class DeklaracijaSet {
 	public int? Vartotojai { get; set; }
 	/// <summary>Vandens ruošimui naudojamos medžiagos</summary>
 	public List<int>?  RuosimoMedziagos { get; set; }
+	/// <summary>Kontaktinio asmens vardas</summary>
+	public string? KontaktaiVardas { get; set; }
+	/// <summary>Kontaktinio asmens pavardė</summary>
+	public string? KontaktaiPavarde { get; set; }
+	/// <summary>Kontaktinio asmens el.paštas</summary>
+	public string? KontaktaiEmail { get; set; }
+	/// <summary>Kontaktinio asmens telefono nr.</summary>
+	public string? KontaktaiPhone { get; set; }
+
 }
 
 
