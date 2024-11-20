@@ -76,7 +76,7 @@ public static class Deklaracija {
 						("@name",usr.FullName),("@usr",usr.ID));
 					await new DBExec("UPDATE g9.deklaravimas SET dkl_kiekis=COALESCE(@kiekis,dkl_kiekis), dkl_vartot=COALESCE(@vartot,dkl_vartot), dkl_medziagos=COALESCE(@medziag,dkl_medziagos), " +
 						"dkl_kontaktas_vardas=COALESCE(@kvardas,dkl_kontaktas_vardas), dkl_kontaktas_pavarde=COALESCE(@kpavarde,dkl_kontaktas_pavarde)," +
-						"dkl_kontaktas_email=COALESCE(@kemail,dkl_kontaktas_email), dkl_kontaktas_phone=COALESCE(@kphone,dkl_kontaktas_phone) " +
+						"dkl_kontaktas_email=COALESCE(@kemail,dkl_kontaktas_email), dkl_kontaktas_phone=COALESCE(@kphone,dkl_kontaktas_phone), " +
 						"dkl_modif_date=timezone('utc',now()), dkl_modif_user=@name, dkl_modif_user_id=@usr WHERE dkl_id=@id;", param).Execute(ct);
 					ctx.Response.ContentType="application/json";
 					var options = new JsonWriterOptions{ Indented = false }; //todo: if debug
