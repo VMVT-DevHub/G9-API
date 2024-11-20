@@ -23,8 +23,8 @@ public static class Veiklos {
 		await DBExtensions.PrintArray("SELECT DISTINCT \"ID\",\"Title\",\"Addr\" FROM g9.v_gvts_ja WHERE gvts = ANY(@gvts);", gvts, writer, ct);
 		writer.WritePropertyName("GVTS");
 		await DBExtensions.PrintArray("SELECT * FROM g9.v_gvts WHERE \"ID\" = ANY(@gvts);", gvts, writer, ct);
-		writer.WritePropertyName("Deklaracijos");
-		await DBExtensions.PrintArray("SELECT * FROM g9.v_deklar WHERE \"GVTS\" = ANY(@gvts)", gvts, writer, ct, VeiklosVal);
+//		writer.WritePropertyName("Deklaracijos");
+//		await DBExtensions.PrintArray("SELECT * FROM g9.v_deklar WHERE \"GVTS\" = ANY(@gvts)", gvts, writer, ct, VeiklosVal);
 		writer.WriteEndObject();
 		await writer.FlushAsync(ct);
 	}

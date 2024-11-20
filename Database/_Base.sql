@@ -44,7 +44,7 @@ END $$;
 DO LANGUAGE 'plpgsql' $$ BEGIN
     SET SESSION AUTHORIZATION "G9_admin"; 
 	CREATE TABLE g9.daznumas (dzn_id integer NOT NULL GENERATED ALWAYS AS IDENTITY, dzn_grupe varchar(3) NOT NULL, dzn_nuo integer NOT NULL, dzn_iki integer NOT NULL, dzn_kartai integer NOT NULL, dzn_laikas integer NOT NULL, dzn_stebesena integer, CONSTRAINT g9_daznumas_pkey PRIMARY KEY (dzn_id));
-	CREATE TABLE g9.deklaravimas (dkl_id integer NOT NULL GENERATED ALWAYS AS IDENTITY, dkl_gvts bigint NOT NULL, dkl_metai integer NOT NULL, dkl_stebesena integer NOT NULL, dkl_status integer NOT NULL, dkl_kiekis double precision, dkl_vartot integer, dkl_medziagos integer[], dkl_deklar_date timestamp(3), dkl_deklar_user varchar(255), dkl_deklar_user_id uuid, dkl_modif_date timestamp(3), dkl_modif_user varchar(255), dkl_modif_user_id uuid, CONSTRAINT g9_deklaravimas_pkey PRIMARY KEY (dkl_id));
+	CREATE TABLE g9.deklaravimas (dkl_id integer NOT NULL GENERATED ALWAYS AS IDENTITY, dkl_gvts bigint NOT NULL, dkl_metai integer NOT NULL, dkl_stebesena integer NOT NULL, dkl_status integer NOT NULL, dkl_kiekis double precision, dkl_vartot integer, dkl_medziagos integer[], dkl_deklar_date timestamp(3), dkl_deklar_user varchar(255), dkl_deklar_user_id uuid, dkl_modif_date timestamp(3), dkl_modif_user varchar(255), dkl_modif_user_id uuid, dkl_kontaktas_vardas varchar(255), dkl_kontaktas_pavarde varchar(255), dkl_kontaktas_email varchar(255), dkl_kontaktas_phone varchar(255), CONSTRAINT g9_deklaravimas_pkey PRIMARY KEY (dkl_id));
 	CREATE TABLE g9.gvts (vkl_id bigint NOT NULL, vkl_ja bigint, vkl_title varchar(255), vkl_saviv varchar(255), vkl_adresas varchar(255), vkl_gvtot varchar(255), CONSTRAINT g9_gvts_pkey PRIMARY KEY (vkl_id));
 	CREATE TABLE g9.lookup (lkp_id integer NOT NULL GENERATED ALWAYS AS IDENTITY, lkp_group varchar(30) NOT NULL, lkp_key varchar(30), lkp_num bigint,  lkp_int integer, lkp_value varchar(255), lkp_sort integer, CONSTRAINT g9_public_lookup_pkey PRIMARY KEY (lkp_id));
 	CREATE TABLE g9.rodikliai (rod_id integer NOT NULL, rod_grupe integer NOT NULL, rod_kodas varchar(30) NOT NULL, rod_rodiklis varchar(255) NOT NULL, rod_daznumas varchar(3), rod_min double precision NOT NULL, rod_max double precision NOT NULL, rod_step double precision NOT NULL, rod_vnt varchar(30) NOT NULL, rod_aprasymas text, CONSTRAINT g9_rodikliai_pkey PRIMARY KEY (rod_id));
@@ -81,7 +81,7 @@ DO LANGUAGE 'plpgsql' $$ BEGIN
 	CREATE OR REPLACE VIEW g9.lkp_daznumo_daugiklis AS SELECT lkp_num as key, lkp_int as val FROM g9.lookup WHERE lkp_group='DaznumoLaikas';
 	CREATE OR REPLACE VIEW g9.lkp_vietos_tipas AS SELECT lkp_num as key, lkp_value as val FROM g9.lookup WHERE lkp_group='VietosTipas';
 	CREATE OR REPLACE VIEW g9.lkp_stebejimo_statusas AS SELECT lkp_num as key, lkp_value as val FROM g9.lookup WHERE lkp_group='StebejimoStatusas';
-	CREATE OR REPLACE VIEW g9.lkp_ruosimo_medziagos AS SELECT lkp_num as key, lkp_value as val FROM g9.lookup WHERE lkp_group='RuosimoMedziagos';
+	CREATE OR REPLACE VIEW g9.lkp_ruosimo_medziagos AS SELECT lkp_num as key, lkp_value as val FROM g9.lookup WHERE lkp_group='RuosimoMedziagos' ORDER BY lkp_sort;
 	CREATE OR REPLACE VIEW g9.lkp_ruosimo_daznumas AS SELECT lkp_num as key, lkp_int as num, lkp_value as val FROM g9.lookup WHERE lkp_group='RuosimoDaznumas';
 	CREATE OR REPLACE VIEW g9.v_deklar AS SELECT dkl_id AS "ID", dkl_gvts AS "GVTS", dkl_metai AS "Metai", dkl_stebesena As "Stebesenos", dkl_status AS "Statusas", dkl_kiekis AS "Kiekis", dkl_vartot AS "Vartotojai", dkl_medziagos as "RuosimoMedziagos", dkl_deklar_date AS "DeklarDate", dkl_deklar_user AS "DeklarUser", dkl_modif_date AS "RedagDate", dkl_modif_user AS "RedagUser" FROM g9.deklaravimas;
 	CREATE OR REPLACE VIEW g9.v_gvts AS SELECT vkl_id AS "ID", vkl_ja AS "JA", vkl_title AS "Title", vkl_adresas AS "Addr", vkl_gvtot as "GVTOT" FROM g9.gvts;
@@ -119,17 +119,17 @@ DO LANGUAGE 'plpgsql' $T$ BEGIN
 	SELECT COALESCE(dkl_kiekis,1),dkl_stebesena,dkl_medziagos into kiekis,stb,ruos FROM g9.deklaravimas WHERE dkl_id=deklar;
 	RETURN QUERY WITH steb as (SELECT stb_rodiklis FROM g9.stebesenos WHERE stb_stebesenos=stb),
 		dzn as (SELECT dzn_grupe,(max(dzn_kartai)*COALESCE(max(l.val),1)) as dzn_kartai FROM g9.daznumas d LEFT JOIN g9.lkp_daznumo_daugiklis l ON d.dzn_laikas = l.key WHERE dzn_stebesena=stb and dzn_nuo <=kiekis AND dzn_iki>=kiekis and dzn_kartai>0 group by dzn_grupe),
-		abg as (SELECT rod_id,COALESCE(r.val,rod_daznumas) as rod_daznumas FROM rodikliai LEFT JOIN g9.lkp_ruosimo_daznumas as r ON (rod_id=r.key and r.num = ANY(ruos))),
+		abg as (SELECT rod_id,COALESCE(r.val,rod_daznumas) as rod_daznumas FROM g9.rodikliai LEFT JOIN g9.lkp_ruosimo_daznumas as r ON (rod_id=r.key and r.num = ANY(ruos))),
 		rod as (SELECT rod_id,dzn_kartai FROM abg INNER JOIN dzn ON (rod_daznumas=dzn_grupe)),
-		rks as (SELECT rks_rodiklis, count(*) as rks_count FROM reiksmes WHERE rks_deklar=deklar group by rks_rodiklis),
+		rks as (SELECT rks_rodiklis, count(*) as rks_count FROM g9.reiksmes WHERE rks_deklar=deklar group by rks_rodiklis),
 		grp as (SELECT rod_id,dzn_kartai FROM steb INNER JOIN rod on (rod_id=stb_rodiklis))
 	SELECT rod_id,COALESCE(rks_count,0)::integer, dzn_kartai FROM grp LEFT JOIN rks ON (rks_rodiklis=rod_id) WHERE dzn_kartai>rks_count or rks_count is null;
 	END $$ LANGUAGE 'plpgsql';
 
 	CREATE OR REPLACE FUNCTION g9.valid_suvesti(deklar integer) RETURNS TABLE("Rodiklis" integer, "Reikia" integer) AS $$ DECLARE stb integer; kiekis integer; ruos integer[]; BEGIN
-	SELECT COALESCE(dkl_kiekis,1),dkl_stebesena,dkl_medziagos into kiekis,stb,ruos FROM deklaravimas WHERE dkl_id=deklar;
+	SELECT COALESCE(dkl_kiekis,1),dkl_stebesena,dkl_medziagos into kiekis,stb,ruos FROM g9.deklaravimas WHERE dkl_id=deklar;
 	IF(kiekis<10) THEN kiekis=10; END IF;
-	RETURN QUERY WITH steb as (SELECT stb_rodiklis FROM stebesenos WHERE stb_stebesenos=stb),
+	RETURN QUERY WITH steb as (SELECT stb_rodiklis FROM g9.stebesenos WHERE stb_stebesenos=stb),
 		dzn as (SELECT dzn_grupe,(max(dzn_kartai)*COALESCE(max(l.val),1)) as dzn_kartai FROM daznumas d LEFT JOIN g9.lkp_daznumo_daugiklis l ON d.dzn_laikas = l.key WHERE dzn_stebesena=stb and dzn_nuo <=kiekis AND dzn_iki>=kiekis and dzn_kartai>0 group by dzn_grupe),
 		abg as (SELECT rod_id,COALESCE(r.val,rod_daznumas) as rod_daznumas FROM rodikliai LEFT JOIN g9.lkp_ruosimo_daznumas as r ON (rod_id=r.key and r.num = ANY(ruos))),
 		rod as (SELECT rod_id,dzn_kartai FROM abg INNER JOIN dzn ON (rod_daznumas=dzn_grupe)),
@@ -152,7 +152,7 @@ DO LANGUAGE 'plpgsql' $T$ BEGIN
 	
 	CREATE OR REPLACE FUNCTION g9.valid_virsija(in deklar integer, out rodiklis integer, out nuo date, out iki date, out max double precision) RETURNS SETOF RECORD AS $$ DECLARE rec RECORD; BEGIN max:=0;
 	   FOR rec IN (WITH 
-	      riba as (SELECT rks_rodiklis rod, rks_date dte FROM reiksmes LEFT JOIN rodikliai on (rks_rodiklis=rod_id) WHERE rks_deklar=deklar and (rks_reiksme>rod_max or rks_reiksme<rod_min) GROUP BY rks_rodiklis,rks_date),
+	      riba as (SELECT rks_rodiklis rod, rks_date dte FROM reiksmes LEFT JOIN g9.rodikliai on (rks_rodiklis=rod_id) WHERE rks_deklar=deklar and (rks_reiksme>rod_max or rks_reiksme<rod_min) GROUP BY rks_rodiklis,rks_date),
 	      rod as (SELECT rks_rodiklis, rks_date, rks_reiksme, rod is not null vl_virs FROM reiksmes LEFT JOIN riba on (rks_rodiklis=rod and rks_date=dte) WHERE rks_deklar=deklar)
 	      SELECT rks_rodiklis as rod, rks_date as dte, rks_reiksme as val, vl_virs as virs, LEAD(vl_virs) OVER (PARTITION BY rks_rodiklis ORDER BY rks_date) IS DISTINCT FROM vl_virs as ends FROM rod
 	   ) LOOP IF rec.virs THEN rodiklis:=rec.rod; iki:=rec.dte; IF nuo IS NULL THEN nuo:=rec.dte; END IF; IF max<rec.val THEN max:=rec.val; END IF; IF rec.ends THEN RETURN NEXT; nuo:=null; END IF; END IF;
@@ -170,7 +170,7 @@ DO LANGUAGE 'plpgsql' $T$ BEGIN
 	   RETURN QUERY SELECT * FROM g9.valid_virsija_get(deklar);
 	END $$; 
 
-	CREATE OR REPLACE FUNCTION g9.valid_nepatvirtinta(deklar integer) RETURNS TABLE(kartojasi integer, trukumas integer, virsija integer) AS $$ BEGIN RETURN QUERY SELECT (SELECT count(*)::int FROM g9.valid_kartojasi WHERE vld_deklar=2119 and vld_tvirtinti<>true) kartojasi, (SELECT count(*)::int FROM g9.valid_trukumas WHERE vld_deklar=2119 and vld_tvirtinti<>true) trukumas, (SELECT count(*)::int FROM g9.valid_virsija where vld_deklar=2119 and vld_tvirtinti<>true) virsija; END; $$ LANGUAGE plpgsql;
+	CREATE OR REPLACE FUNCTION g9.valid_nepatvirtinta(deklar integer) RETURNS TABLE(kartojasi integer, trukumas integer, virsija integer) AS $$ BEGIN RETURN QUERY SELECT (SELECT count(*)::int FROM g9.valid_kartojasi WHERE vld_deklar=deklar and vld_del<>true and vld_tvirtinti<>true) kartojasi, (SELECT count(*)::int FROM g9.valid_trukumas WHERE vld_deklar=deklar and vld_del<>true and vld_tvirtinti<>true) trukumas, (SELECT count(*)::int FROM g9.valid_virsija where vld_deklar=deklar and vld_del<>true and vld_tvirtinti<>true) virsija; END; $$ LANGUAGE plpgsql;
 	CREATE OR REPLACE FUNCTION g9.valid_virsija_detales(vld integer) RETURNS bool AS $$ DECLARE ret bool; BEGIN SELECT rvl.key is not null FROM g9.valid_virsija LEFT JOIN g9.rodikliai ON vld_rodiklis=rod_id LEFT JOIN g9.lkp_rodikliu_validacija as rvl ON (rod_grupe=rvl.key) WHERE vld_id=vld INTO ret; RETURN ret; END $$ LANGUAGE plpgsql;
 
 	CREATE OR REPLACE FUNCTION app.api_keys(deklar integer) RETURNS table("Key" varchar(255), "Exp" date, "Date" timestamp(0), "User" varchar(255)) AS $$ BEGIN RETURN QUERY SELECT apk_key, apk_exp, apk_date, CONCAT(user_fname,' ',user_lname)::varchar(255) FROM app.api_keys LEFT JOIN app.users on (apk_user=user_id) WHERE apk_deklar=1; END $$ LANGUAGE plpgsql;

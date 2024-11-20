@@ -8,8 +8,8 @@ public class Veiklos {
 	public ArrayModel<JA>? JA { get; set; }
 	/// <summary>Geriamo Vandens Tiekimo sistemų sąrašas</summary>
 	public ArrayModel<GVTS>? GVTS { get; set; }
-	/// <summary>Deklaruojami metai</summary>
-	public ArrayModelA<Deklaracija>? Deklaracijos { get; set; }
+//	/// <summary>Deklaruojami metai</summary>
+//	public ArrayModelA<Deklaracija>? Deklaracijos { get; set; }
 }
 
 
