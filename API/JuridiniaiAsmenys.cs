@@ -8,8 +8,16 @@ namespace App.API;
 /// <summary>Juridinių asmenų API</summary>
 public static class JuridiniaiAsmenys {
 	private async static Task<JADetails?> GetJA(long ja, CancellationToken ct) {
-		using var db = new DBExec("SELECT DISTINCT \"ID\",\"Title\",\"Addr\",\"KontaktasVardas\",\"KontaktasPavarde\",\"KontaktasEmail\",\"KontaktasPhone\" FROM g9.v_ja_detales WHERE \"ID\"=@id;", "@id", ja);
-		return (await db.GetListAsync<JADetails>(ct)).FirstOrDefault();
+		using var db = new DBExec("SELECT DISTINCT \"ID\"::bigint,\"Title\",\"Addr\",\"KontaktasVardas\",\"KontaktasPavarde\",\"KontaktasEmail\",\"KontaktasPhone\" FROM g9.v_ja_detales WHERE \"ID\"=@id;", "@id", ja);
+		using var rdr = await db.GetReader(ct);
+		if (rdr.Read()) {
+			return new() {
+				ID = rdr.GetLongN(0) ?? 0, Title = rdr.GetStringN(1), Addr = rdr.GetStringN(2),
+				KontaktaiVardas = rdr.GetStringN(3), KontaktaiPavarde = rdr.GetStringN(4),
+				KontaktaiEmail = rdr.GetStringN(5), KontaktaiPhone = rdr.GetStringN(6)
+			};
+		}
+		return null;
 	}
 
 	/// <summary>Gauti vartotojo JA detales</summary>
@@ -35,7 +43,7 @@ public static class JuridiniaiAsmenys {
 		ctx.Response.ContentType = "application/json";
 		var usr = ctx.GetUser();
 		if (usr?.JA?.ID is not null) {
-			using var db = new DBExec("INSERT INTO your_table (ja_id,jad_kontaktas_vardas,jad_kontaktas_pavarde,jad_kontaktas_email,jad_kontaktas_phone,jad_user) VALUES (@id,@konvardas,@konpavarde,@konemail,@konphone,@usr) " +
+			using var db = new DBExec("INSERT INTO g9.ja_detales (ja_id,jad_kontaktas_vardas,jad_kontaktas_pavarde,jad_kontaktas_email,jad_kontaktas_phone,jad_user) VALUES (@id,@konvardas,@konpavarde,@konemail,@konphone,@usr) " +
 				"ON CONFLICT (ja_id) DO UPDATE SET jad_kontaktas_vardas=@konvardas,jad_kontaktas_pavarde=@konpavarde,jad_kontaktas_email=@konemail,jad_kontaktas_phone=@konphone,jad_user=@usr,jad_date=timezone('utc',now());",
 				("@id", usr.JA.ID), ("@konvardas", jad.KontaktaiVardas), ("@konpavarde", jad.KontaktaiPavarde), ("@konemail", jad.KontaktaiEmail), ("@konphone", jad.KontaktaiPhone), ("@usr", usr.ID));
 			var res = await db.Execute(ct);
