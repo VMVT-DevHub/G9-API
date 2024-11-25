@@ -479,7 +479,7 @@ public class DBParams {
 		if (print || DBExec.Debug) { Console.WriteLine($"[SQL] [{id}] {cmd.CommandText} {(Data?.Count > 0 ? JsonSerializer.Serialize(Data) : "")}"); }
 	}
 	/// <summary>Parametrų objekto iniciavimas</summary>
-	public DBParams() { Data = new (); }
+	public DBParams() { Data = []; }
 	/// <summary>Parametrų objekto iniciavimas</summary>
 	/// <param name="pairs">Duomenų masyvas</param>
 	public DBParams(params ValueTuple<string, object?>[] pairs) { Data = pairs.ToDictionary(x => x.Item1, x => x.Item2); }

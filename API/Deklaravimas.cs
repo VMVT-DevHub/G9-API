@@ -111,7 +111,7 @@ public static class Deklaravimas {
 			var param = new DBParams(("@deklar",deklaracija),("@usr",usr),("@id",0),("@tvirt",false),("@past",""));
 			foreach(var i in data.Trukumas){
 				if(i.Patvirtinta && i.Pastabos?.Length<5) {
-					(err.Trukumas??=new()).Add(new(i.ID,"Neįvesta arba per trumpa pastaba"));
+					(err.Trukumas ??= []).Add(new(i.ID, "Neįvesta arba per trumpa pastaba"));
 					i.Patvirtinta=false;
 				}
 				param.Data["@id"]=i.ID; param.Data["@tvrt"]=i.Patvirtinta; param.Data["@pstb"]=i.Pastabos;

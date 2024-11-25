@@ -37,7 +37,10 @@ app.MapPost("/api/deklaruoti/{deklaracija}",Deklaravimas.Submit).Swagger("","Pat
 //app.MapPost("/api/deklaruoti/{deklaracija}/{tipas}",Deklaravimas.UpdateOne).Swagger("","Atnaujinti delkaracijos neatitiktis").Response<G9.Models.Deklaravimas>(200,422,401,403,404).RequireRole();
 
 // Veiklos
-app.MapGet("/api/veiklos",Veiklos.Get).Swagger("","Gaunamos prisijungusio vartotojo veiklos ir deklaruojami metai").Response<G9.Models.Veiklos>(200,401,403).RequireRole();
+app.MapGet("/api/veiklos", Veiklos.Get).Swagger("","Gaunamos prisijungusio vartotojo veiklos ir deklaruojami metai").Response<G9.Models.Veiklos>(200,401,403).RequireRole();
+
+app.MapGet("/api/ja", JuridiniaiAsmenys.Get).Swagger("", "Gaunamos prisijungusio vartotojo juridinio asmens duomenys").Response<G9.Models.JADetails>(200, 401, 403).RequireLogin();
+app.MapPost("/api/ja", JuridiniaiAsmenys.Set).Swagger("", "Juridinio asmens kontaktinių duomenų redagavimas").Response<G9.Models.JADetails>(200, 401, 403).RequireRole();
 
 // Rodikliai
 app.MapGet("/api/rodikliai",Rodikliai.List).Swagger("","Gaunamas pilnas rodiklių sąrašas").Response<G9.Models.RodikliuSarasas>(200).RequireLogin();

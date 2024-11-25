@@ -6,7 +6,7 @@ namespace G9.Models;
 /// <summary>Deklaruojamų metų sąrašas veikloms pagal ūkio subjektus</summary>
 public class Veiklos {
 	/// <summary>Ūkio subjektai priskirti prisijungusiam vartotojui.</summary>
-	public ArrayModel<JA>? JA { get; set; }
+	public ArrayModel<JADetails>? JA { get; set; }
 	/// <summary>Geriamo Vandens Tiekimo sistemų sąrašas</summary>
 	public ArrayModel<GVTS>? GVTS { get; set; }
 //	/// <summary>Deklaruojami metai</summary>
@@ -22,6 +22,32 @@ public class JA {
 	public string? Title { get; set; }
 	/// <summary>Registruoto ūkio subjekto adresas</summary>
 	public string? Addr { get; set; }
+}
+
+/// <summary>Ūkio subjekto detali informacija</summary>
+public class JADetails : JA {
+	/// <summary>Kontaktinio asmens vardas</summary>
+	public string? KontaktaiVardas { get; set; }
+	/// <summary>Kontaktinio asmens pavardė</summary>
+	public string? KontaktaiPavarde { get; set; }
+	/// <summary>Kontaktinio asmens el.paštas</summary>
+	public string? KontaktaiEmail { get; set; }
+	/// <summary>Kontaktinio asmens telefono nr.</summary>
+	public string? KontaktaiPhone { get; set; }
+}
+
+/// <summary>Ūkio subjekto detalių keitimas</summary>
+public class JADetailsSet {
+	/// <summary>Unikalus ūkio subjekto numeris</summary>
+	public long ID { get; set; }
+	/// <summary>Kontaktinio asmens vardas</summary>
+	public string? KontaktaiVardas { get; set; }
+	/// <summary>Kontaktinio asmens pavardė</summary>
+	public string? KontaktaiPavarde { get; set; }
+	/// <summary>Kontaktinio asmens el.paštas</summary>
+	public string? KontaktaiEmail { get; set; }
+	/// <summary>Kontaktinio asmens telefono nr.</summary>
+	public string? KontaktaiPhone { get; set; }
 }
 
 /// <summary>Geriamojo vandens tiekimo sistemos informacija</summary>

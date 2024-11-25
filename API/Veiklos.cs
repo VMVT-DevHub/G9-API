@@ -20,7 +20,7 @@ public static class Veiklos {
 		var rls = ctx.GetUser()?.Roles?.ToArray();
 		var gvts = new DBParams(("@gvts", rls));
 		writer.WritePropertyName("JA");
-		await DBExtensions.PrintArray("SELECT DISTINCT \"ID\",\"Title\",\"Addr\" FROM g9.v_gvts_ja WHERE gvts = ANY(@gvts);", gvts, writer, ct);
+		await DBExtensions.PrintArray("SELECT DISTINCT \"ID\",\"Title\",\"Addr\",\"KontaktasVardas\",\"KontaktasPavarde\",\"KontaktasEmail\",\"KontaktasPhone\" FROM g9.v_gvts_ja WHERE gvts = ANY(@gvts);", gvts, writer, ct);
 		writer.WritePropertyName("GVTS");
 		await DBExtensions.PrintArray("SELECT * FROM g9.v_gvts WHERE \"ID\" = ANY(@gvts);", gvts, writer, ct);
 //		writer.WritePropertyName("Deklaracijos");
