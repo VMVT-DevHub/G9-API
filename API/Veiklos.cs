@@ -6,7 +6,7 @@ namespace App.API;
 /// <summary>Veiklų API</summary>
 public static class Veiklos {
 	/// <summary>Veiklų statinės reikšmės</summary>
-	public static CachedLookup VeiklosVal { get; } = new CachedLookup("Veiklos", ("Stebesenos","lkp_stebesenos"),("Statusas","lkp_statusas"),("RuosimoMedziagos","lkp_ruosimo_medziagos"));
+	public static CachedLookup VeiklosVal { get; } = new CachedLookup("Veiklos", ("Stebesenos","lkp_stebesenos"),("Statusas","lkp_statusas"), ("RuosimoMedziagos", "lkp_ruosimo_medziagos"), ("RuosimoBudai", "lkp_ruosimo_budai"));
 
 	/// <summary>Gauti vartotojo veiklas</summary>
 	/// <param name="ctx"></param>
