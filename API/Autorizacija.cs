@@ -58,21 +58,27 @@ public static class Auth {
 	/// <param name="ja">Juridinio asmens kodas</param>
 	/// <param name="ct">Cancellation Token</param>
 	public static async Task Impersonate(HttpContext ctx, long ja, CancellationToken ct){
-		if(ja==1234){
-			VIISP.Auth.SessionInit(new(){ User=new(){ Id=new Guid(), Email="test@vmvt.lt", Phone="+37060000000", FName="Test", LName="Test"}}, ctx);
+		//TODO: laikinas taisymas, pašalinti
+		if (ctx.Request.Host.Host.StartsWith("test.g9")) {
+			ctx.Response.Redirect($"https://{ctx.Request.Host.Value.Replace("test.g9","g9.test")}{ctx.Request.Path}", permanent: true);
 		}
-		if(ctx.GetAuth()){		
-			using var db = new DBExec("SELECT ja_pavadinimas,adresas FROM jar.data WHERE ja_kodas=@id;","@id",ja);
-			using var rdr = await db.GetReader(ct);
-			var usr = ctx.GetUser();
-			if(usr is not null && rdr.HasRows && await rdr.ReadAsync(ct)){
-				//TODO: Add log
-				usr.JA = new () { ID=ja, Title=rdr.GetStringN(0), Addr=rdr.GetStringN(1) };
-				usr.GetRoles();
+		else {
+			if (ja == 1234) {
+				VIISP.Auth.SessionInit(new() { User = new() { Id = new Guid(), Email = "test@vmvt.lt", Phone = "+37060000000", FName = "Test", LName = "Test" } }, ctx);
 			}
-			else Error.E404(ctx,true);
+			if (ctx.GetAuth()) {
+				using var db = new DBExec("SELECT ja_pavadinimas,adresas FROM jar.data WHERE ja_kodas=@id;", "@id", ja);
+				using var rdr = await db.GetReader(ct);
+				var usr = ctx.GetUser();
+				if (usr is not null && rdr.HasRows && await rdr.ReadAsync(ct)) {
+					//TODO: Add log
+					usr.JA = new() { ID = ja, Title = rdr.GetStringN(0), Addr = rdr.GetStringN(1) };
+					usr.GetRoles();
+				}
+				else Error.E404(ctx, true);
+			}
+			else Error.E401(ctx, true);
 		}
-		else Error.E401(ctx,true);
 	}
 #endif
 }
