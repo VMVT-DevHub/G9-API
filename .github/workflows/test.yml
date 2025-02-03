@@ -19,7 +19,7 @@ jobs:
         run: dotnet publish -c Debug -r linux-x64 -p:PublishSingleFile=true --self-contained false
         
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
            name: test-build
            path: ./bin/Debug/net8.0/linux-x64/publish/
