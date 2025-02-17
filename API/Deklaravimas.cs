@@ -14,8 +14,10 @@ public static class Deklaravimas {
 	/// <param name="ctx"></param>
 	/// <param name="deklaracija">Deklaracijos ID</param>
 	/// <param name="ct"></param><returns></returns>
-	public static async Task Valid(HttpContext ctx, int deklaracija, CancellationToken ct){
-		if(await Validate(ctx,deklaracija,ct)) await PrintDeklar(ctx,deklaracija,ct);
+	public static async Task Valid(HttpContext ctx, int deklaracija, CancellationToken ct) {
+		var status = await GetStatus(ctx, deklaracija, ct);
+		if (status == 3) await PrintDeklarView(ctx, deklaracija, ct);
+		else if (status > 0) await PrintDeklar(ctx, deklaracija, ct);
 	}
 
 	private static async Task PrintDeklar(HttpContext ctx, int deklaracija, CancellationToken ct, NeatitikciuTipas? tipas=null, Err? error=null){
@@ -36,6 +38,29 @@ public static class Deklaravimas {
 		if(tipas is null || tipas == NeatitikciuTipas.Virsijimas){
 			writer.WritePropertyName("Virsijimas");
 			await DBExtensions.PrintArray("SELECT * FROM g9.valid_virsija_set(@deklar,@usr);", prms, writer, ct, DeklarVirsijimasVal, error?.Virsijimas);
+		}
+		writer.WriteEndObject();
+		await writer.FlushAsync(ct);
+	}
+
+	private static async Task PrintDeklarView(HttpContext ctx, int deklaracija, CancellationToken ct, NeatitikciuTipas? tipas = null, Err? error = null) {
+		ctx.Response.ContentType = "application/json";
+		var options = new JsonWriterOptions { Indented = false }; //todo: if debug
+		using var writer = new Utf8JsonWriter(ctx.Response.BodyWriter, options);
+		writer.WriteStartObject();
+
+		var prms = new DBParams(("@deklar", deklaracija), ("@usr", ctx.GetUser()?.ID));
+		if (tipas is null || tipas == NeatitikciuTipas.Trukumas) {
+			writer.WritePropertyName("Trukumas");
+			await DBExtensions.PrintArray("SELECT * FROM g9.valid_trukumas_get(@deklar);", prms, writer, ct, null, error?.Trukumas);
+		}
+		if (tipas is null || tipas == NeatitikciuTipas.Kartojasi) {
+			writer.WritePropertyName("Kartojasi");
+			await DBExtensions.PrintArray("SELECT * FROM g9.valid_kartojasi_get(@deklar);", prms, writer, ct, null, error?.Kartojasi);
+		}
+		if (tipas is null || tipas == NeatitikciuTipas.Virsijimas) {
+			writer.WritePropertyName("Virsijimas");
+			await DBExtensions.PrintArray("SELECT * FROM g9.valid_virsija_get(@deklar);", prms, writer, ct, DeklarVirsijimasVal, error?.Virsijimas);
 		}
 		writer.WriteEndObject();
 		await writer.FlushAsync(ct);
@@ -97,7 +122,9 @@ public static class Deklaravimas {
 	/// <param name="deklaracija">Deklaracijos ID</param>
 	/// <param name="tipas">Deklaracijos neatitikčių tipas</param>
 	public static async Task GetOne(HttpContext ctx, int deklaracija, [FromRoute] NeatitikciuTipas tipas, CancellationToken ct){
-		if(await Validate(ctx,deklaracija,ct)) await PrintDeklar(ctx,deklaracija,ct,tipas);
+		var status = await GetStatus(ctx, deklaracija, ct);
+		if (status == 3) await PrintDeklarView(ctx, deklaracija, ct, tipas);
+		else if (status > 0) await PrintDeklar(ctx, deklaracija, ct, tipas);
 	}
 
 	
@@ -172,21 +199,34 @@ public static class Deklaravimas {
 	/// <param name="ctx"></param><param name="ct"></param><returns></returns>
 	/// <param name="deklaracija">Deklaracijos ID</param><param name="skipkiek">Praleisti kiekio validaciją</param>
 	public static async Task<bool> Validate(HttpContext ctx, long deklaracija, CancellationToken ct, bool skipkiek=false){
-		using var db = new DBExec("SELECT dkl_gvts, dkl_status, dkl_metai, dkl_kiekis FROM g9.deklaravimas WHERE dkl_id=@id;","@id",deklaracija);
-		using var rdr = await db.GetReader(ct);
-		if(rdr.Read()){
-			if(ctx.GetUser()?.Roles?.Contains(rdr.GetInt64(0)) == true){	
-				if(skipkiek || rdr.GetDoubleN(3)>0) {	
-					var status = rdr.GetInt32(1);
-					if(status==3) Error.E422(ctx,true,$"Ši deklaracija jau pateikta.");
-					else {					
-						if(status!=2 && ctx.Request.Method=="POST") 
-							Error.E422(ctx,true,$"Šios deklaracijos pateikti negalima.");
-						else return true;
-					}
-				} else Error.E422(ctx,true,"Neįvestas deklaruojamas vandens kiekis.");
-			} else Error.E403(ctx,true);
-		} else Error.E404(ctx,true);
+		var status = await GetStatus(ctx, deklaracija, ct, skipkiek);
+		if (status == 3) Error.E422(ctx, true, $"Ši deklaracija jau pateikta.");
+		else {
+			if (status != 2 && ctx.Request.Method == "POST")
+				Error.E422(ctx, true, $"Šios deklaracijos pateikti negalima.");
+			else return true;
+		}
 		return false;
 	}
+
+	/// <summary>Tikrinti ar galima deklaruoti</summary>
+	/// <param name="ctx"></param><param name="ct"></param><returns></returns>
+	/// <param name="deklaracija">Deklaracijos ID</param><param name="skipkiek">Praleisti kiekio validaciją</param>
+	public static async Task<int> GetStatus(HttpContext ctx, long deklaracija, CancellationToken ct, bool skipkiek = false) {
+		using var db = new DBExec("SELECT dkl_gvts, dkl_status, dkl_metai, dkl_kiekis FROM g9.deklaravimas WHERE dkl_id=@id;", "@id", deklaracija);
+		using var rdr = await db.GetReader(ct);
+		if (rdr.Read()) {
+			if (ctx.GetUser()?.Roles?.Contains(rdr.GetInt64(0)) == true) {
+				if (skipkiek || rdr.GetDoubleN(3) > 0) {
+					return rdr.GetInt32(1);
+				}
+				else Error.E422(ctx, true, "Neįvestas deklaruojamas vandens kiekis.");
+			}
+			else Error.E403(ctx, true);
+		}
+		else Error.E404(ctx, true);
+		return 0;
+	}
+
+
 }
