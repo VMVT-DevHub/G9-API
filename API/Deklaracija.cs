@@ -71,12 +71,12 @@ public static class Deklaracija {
 				if (stat is null) Error.E404(ctx, true);
 				else if (stat == 3) Error.E422(ctx, true, $"Negalima keisti jau deklaruotų duomenų");
 				else {
-					var param = new DBParams(("@id", deklaracija), ("@kiekis", dcl.Kiekis), ("@vartot", dcl.Vartotojai),
-						("@medziag", dcl.RuosimoMedziagos), ("@budai", dcl.RuosimoBudai), ("@ruos", dcl.VanduoRuosiamas),
+					var param = new DBParams(("@id", deklaracija), ("@kiekis", dcl.Kiekis), ("@vartot", dcl.Vartotojai), ("@ruos", dcl.VanduoRuosiamas),
+						("@medziag", BoolNull(dcl.VanduoRuosiamas, dcl.RuosimoMedziagos)), ("@budai", BoolNull(dcl.VanduoRuosiamas,dcl.RuosimoBudai)), 
 						("@kvardas", dcl.KontaktaiVardas), ("@kpavarde", dcl.KontaktaiPavarde), ("@kemail", dcl.KontaktaiEmail), ("@kphone", dcl.KontaktaiPhone),
 						("@name", usr.FullName), ("@usr", usr.ID));
 					await new DBExec("UPDATE g9.deklaravimas SET dkl_kiekis=COALESCE(@kiekis,dkl_kiekis), dkl_vartot=COALESCE(@vartot,dkl_vartot), " +
-						"dkl_ruosiamas=@ruos, dkl_medziagos=COALESCE(@medziag,dkl_medziagos), dkl_ruos_budai=COALESCE(@budai,dkl_ruos_budai), " +
+						"dkl_ruosiamas=COALESCE(@ruos,dkl_ruosiamas), dkl_medziagos=COALESCE(@medziag,dkl_medziagos), dkl_ruos_budai=COALESCE(@budai,dkl_ruos_budai), " +
 						"dkl_kontaktas_vardas=COALESCE(@kvardas,dkl_kontaktas_vardas), dkl_kontaktas_pavarde=COALESCE(@kpavarde,dkl_kontaktas_pavarde)," +
 						"dkl_kontaktas_email=COALESCE(@kemail,dkl_kontaktas_email), dkl_kontaktas_phone=COALESCE(@kphone,dkl_kontaktas_phone), " +
 						"dkl_modif_date=timezone('utc',now()), dkl_modif_user=@name, dkl_modif_user_id=@usr WHERE dkl_id=@id;", param).Execute(ct);
@@ -89,6 +89,10 @@ public static class Deklaracija {
 			}
 			else Error.E403(ctx, true);
 		} else Error.E404(ctx,true);
+	}
+
+	private static List<int>? BoolNull(bool? yn, List<int>? val) {
+		if (yn is null) return null; else if (yn.Value) return val ?? []; else return [];
 	}
 
 	
