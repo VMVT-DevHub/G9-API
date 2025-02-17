@@ -66,26 +66,28 @@ public static class Deklaracija {
 		if(rdr.HasRows & rdr.Read()){
 			var gvts=rdr.GetLongN(0);
 			var usr=ctx.GetUser();
-			if(usr?.Roles?.Contains(gvts??0) == true) {
+			if (usr?.Roles?.Contains(gvts ?? 0) == true) {
 				var stat = rdr.GetIntN(1);
-				if(stat is null) Error.E404(ctx, true);
-				else if(stat==3) Error.E422(ctx, true, $"Negalima keisti jau deklaruotų duomenų");
+				if (stat is null) Error.E404(ctx, true);
+				else if (stat == 3) Error.E422(ctx, true, $"Negalima keisti jau deklaruotų duomenų");
 				else {
-					var param = new DBParams(("@id",deklaracija), ("@kiekis",dcl.Kiekis),("@vartot",dcl.Vartotojai),("@medziag",dcl.RuosimoMedziagos),("@budai",dcl.RuosimoBudai),
+					var param = new DBParams(("@id", deklaracija), ("@kiekis", dcl.Kiekis), ("@vartot", dcl.Vartotojai),
+						("@medziag", dcl.RuosimoMedziagos), ("@budai", dcl.RuosimoBudai), ("@ruos", dcl.VanduoRuosiamas),
 						("@kvardas", dcl.KontaktaiVardas), ("@kpavarde", dcl.KontaktaiPavarde), ("@kemail", dcl.KontaktaiEmail), ("@kphone", dcl.KontaktaiPhone),
-						("@name",usr.FullName),("@usr",usr.ID));
-					await new DBExec("UPDATE g9.deklaravimas SET dkl_kiekis=COALESCE(@kiekis,dkl_kiekis), dkl_vartot=COALESCE(@vartot,dkl_vartot), dkl_medziagos=COALESCE(@medziag,dkl_medziagos), dkl_ruos_budai=COALESCE(@budai,dkl_ruos_budai), " +
+						("@name", usr.FullName), ("@usr", usr.ID));
+					await new DBExec("UPDATE g9.deklaravimas SET dkl_kiekis=COALESCE(@kiekis,dkl_kiekis), dkl_vartot=COALESCE(@vartot,dkl_vartot), " +
+						"dkl_ruosiamas=@ruos, dkl_medziagos=COALESCE(@medziag,dkl_medziagos), dkl_ruos_budai=COALESCE(@budai,dkl_ruos_budai), " +
 						"dkl_kontaktas_vardas=COALESCE(@kvardas,dkl_kontaktas_vardas), dkl_kontaktas_pavarde=COALESCE(@kpavarde,dkl_kontaktas_pavarde)," +
 						"dkl_kontaktas_email=COALESCE(@kemail,dkl_kontaktas_email), dkl_kontaktas_phone=COALESCE(@kphone,dkl_kontaktas_phone), " +
 						"dkl_modif_date=timezone('utc',now()), dkl_modif_user=@name, dkl_modif_user_id=@usr WHERE dkl_id=@id;", param).Execute(ct);
-					ctx.Response.ContentType="application/json";
-					var options = new JsonWriterOptions{ Indented = false }; //todo: if debug
+					ctx.Response.ContentType = "application/json";
+					var options = new JsonWriterOptions { Indented = false }; //todo: if debug
 					using var writer = new Utf8JsonWriter(ctx.Response.BodyWriter, options);
-					await DBExtensions.PrintArray("SELECT * FROM g9.v_deklar WHERE \"ID\"=@id;", new(("@id",deklaracija)), writer, ct, Veiklos.VeiklosVal);
+					await DBExtensions.PrintArray("SELECT * FROM g9.v_deklar WHERE \"ID\"=@id;", new(("@id", deklaracija)), writer, ct, Veiklos.VeiklosVal);
 					await writer.FlushAsync(ct);
 				}
 			}
-			else Error.E403(ctx,true);
+			else Error.E403(ctx, true);
 		} else Error.E404(ctx,true);
 	}
 

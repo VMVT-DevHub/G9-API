@@ -82,6 +82,8 @@ public class Deklaracija {
 	/// <summary>Aptarnaujamų vartotojų skaičius</summary>
 	public int? Vartotojai { get; set; }
 	/// <summary>Vandens ruošimui naudojamos medžiagos</summary>
+	public bool? VanduoRuosiamas { get; set; }
+	/// <summary>Vandens ruošimui naudojamos medžiagos</summary>
 	public List<int>? RuosimoMedziagos { get; set; }
 	/// <summary>Vandens ruošimo būdai</summary>
 	public List<int>? RuosimoBudai { get; set; }
@@ -117,6 +119,8 @@ public class DeklaracijaSet {
 	public double? Kiekis { get; set; }
 	/// <summary>Aptarnaujamų vartotojų skaičius</summary>
 	public int? Vartotojai { get; set; }
+	/// <summary>Vandens ruošimui naudojamos medžiagos</summary>
+	public bool? VanduoRuosiamas { get; set; }
 	/// <summary>Vandens ruošimui naudojamos medžiagos</summary>
 	public List<int>? RuosimoMedziagos { get; set; }
 	/// <summary>Vandens ruošimo būdai</summary>
