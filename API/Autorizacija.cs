@@ -30,7 +30,18 @@ public static class Auth {
 	/// <param name="r">Peradresavimo kelias</param>
 	public static void Logout(HttpContext ctx, string? r=null){
 		if(ctx.Request.Cookies.TryGetValue("SSID",out var ssid) && !string.IsNullOrEmpty(ssid)) Session.DropSession(ssid,ctx);
-		ctx.Response.Redirect(string.IsNullOrEmpty(r) ? "/" : r);
+		ctx.Response.Redirect(TestUrl(r));
+	}
+
+
+	private static string TestUrl(string? url) {
+		if (!string.IsNullOrEmpty(url)) {
+			var uri = new Uri(url);
+			if (uri.IsLoopback || uri.Host.EndsWith("vmvt.lt", StringComparison.OrdinalIgnoreCase)) {
+				return url;
+			}
+		}
+		return "/";
 	}
 
 	/// <summary>Vartotojo prisijungimas</summary>
