@@ -35,12 +35,14 @@ public static class Auth {
 
 
 	private static string TestUrl(string? url) {
-		if (!string.IsNullOrEmpty(url)) {
-			var uri = new Uri(url);
-			if (uri.IsLoopback || uri.Host.EndsWith("vmvt.lt", StringComparison.OrdinalIgnoreCase)) {
-				return url;
+		try {
+			if (!string.IsNullOrEmpty(url)) {
+				var uri = new Uri(url);
+				if (uri.IsLoopback || uri.Host.EndsWith("vmvt.lt", StringComparison.OrdinalIgnoreCase)) {
+					return url;
+				}
 			}
-		}
+		} catch (Exception) { }
 		return "/";
 	}
 
