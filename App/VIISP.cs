@@ -61,17 +61,24 @@ public class Auth {
 		LockIP(ctx);
 		if(!ct.IsCancellationRequested) {			
 			try {
-				using var response = await HClient.GetAsync("", ct);
-				var rsp = await response.Content.ReadAsStringAsync(ct);
-				if(response.IsSuccessStatusCode){
-					var tck = JsonSerializer.Deserialize<AuthTicket>(rsp);					
-					if(tck?.Ticket is not null){
-						var ath = new AuthRequest((Guid)tck.Ticket) { IP=ctx.GetIP(), Return = r ?? Config.GetVal("Auth", "Return") };
-						Redirect.TryAdd(ath.Ticket??new(),ath);
-						ctx.Response.Redirect(tck.Url??"/");
-						return ath;
-					} else return new  AuthRequestError(1004,"Peradresavimo kodo klaida",rsp);
-				} else return new  AuthRequestError(1003,"Peradresavimo klaida",rsp);
+				//using var response = await HClient.GetAsync("", ct);
+				//var rsp = await response.Content.ReadAsStringAsync(ct);
+				//if(response.IsSuccessStatusCode){
+					//var tck = JsonSerializer.Deserialize<AuthTicket>(rsp);					
+					//if(tck?.Ticket is not null){
+						//var ath = new AuthRequest((Guid)tck.Ticket) { IP=ctx.GetIP(), Return = r ?? Config.GetVal("Auth", "Return") };
+						//Redirect.TryAdd(ath.Ticket??new(),ath);
+						//ctx.Response.Redirect(tck.Url??"/");
+
+						//temp fix (start)
+						ctx.Response.Cookies.Append("g9ret", r ?? Config.GetVal("Auth", "Return") ?? "/", new CookieOptions { Secure = true, IsEssential = true });
+						ctx.Response.Redirect(Config.GetVal("Auth", "Redirect") ?? "/");
+						return new();
+						//temp fix (end)
+
+						//return ath;
+					//} else return new  AuthRequestError(1004,"Peradresavimo kodo klaida",rsp);
+				//} else return new  AuthRequestError(1003,"Peradresavimo klaida",rsp);
 			} catch (Exception ex) { return new  AuthRequestError(1002,"Sujungimo klaida",ex.Message); }
 		}
 		return new AuthRequestError(0);
@@ -98,22 +105,31 @@ public class Auth {
 	/// <param name="ctx"></param>
 	/// <param name="ct"></param>
 	public static async Task<AuthRequest> GetUser(Guid ticket, HttpContext ctx, CancellationToken ct){
-		if(Redirect.TryRemove(ticket, out var tck)){
-			if(tck.IP==ctx.GetIP()){
-				if(tck.Timeout>DateTime.UtcNow){
+		//if(Redirect.TryRemove(ticket, out var tck)){
+			//if(tck.IP==ctx.GetIP()){
+				//if(tck.Timeout>DateTime.UtcNow){
 					try {
 						using var response = await HClient.GetAsync($"{ticket}", ct);
 						var rsp = await response.Content.ReadAsStringAsync(ct);
 						if(response.IsSuccessStatusCode){
 							var usr = JsonSerializer.Deserialize<AuthUser>(rsp);
 							if(usr?.Id is not null){
+
+								//temp fix (start)
+								var tck = new AuthRequest();
+								if(ctx.Request.Cookies.TryGetValue("g9ret", out var ret)) {
+									tck.Return = ret;
+									ctx.Response.Cookies.Delete("g9ret");
+								}
+								//temp fix (end)
+
 								tck.User=usr; return tck; 
 							} else return new AuthRequestError(1010,"Negalimas prisijungimas",rsp);
 						} else return new AuthRequestError(1009,"Autorizacijos klaida",rsp);
 					} catch (Exception ex) { return new AuthRequestError(1008,"Prisijungimo validacijos klaida",ex.Message); }
-				} else return new AuthRequestError(1007,"Baigėsi prisijungimui skirtas laikas",tck.Timeout.ToString("u"));
-			} else return new AuthRequestError(1006,"Neteisingas prisijungimo adresas",tck.Timeout.ToString("u"));
-		} else return new AuthRequestError(1005,"Neatpažinta autorizacija",ticket.ToString());
+				//} else return new AuthRequestError(1007,"Baigėsi prisijungimui skirtas laikas",tck.Timeout.ToString("u"));
+			//} else return new AuthRequestError(1006,"Neteisingas prisijungimo adresas",tck.Timeout.ToString("u"));
+		//} else return new AuthRequestError(1005,"Neatpažinta autorizacija",ticket.ToString());
 	}
 
 	/// <summary>Gauti vartotojo duomenis pagal ID ar AK</summary>
