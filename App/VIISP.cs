@@ -65,8 +65,8 @@ public class Auth {
 				var rsp = await response.Content.ReadAsStringAsync(ct);
 				if(response.IsSuccessStatusCode){
 					var tck = JsonSerializer.Deserialize<AuthTicket>(rsp);					
-					if(tck?.Token is not null){
-						var ath = new AuthRequest((Guid)tck.Token) { IP=ctx.GetIP(), Return = r ?? Config.GetVal("Auth", "Return") };
+					if(tck?.Ticket is not null){
+						var ath = new AuthRequest((Guid)tck.Ticket) { IP=ctx.GetIP(), Return = r ?? Config.GetVal("Auth", "Return") };
 						Redirect.TryAdd(ath.Ticket??new(),ath);
 						ctx.Response.Redirect(tck.Url??"/");
 						return ath;
@@ -228,7 +228,7 @@ public class AuthUser {
 /// <summary>VIISP Autorizacija</summary>
 public class AuthTicket {
 	/// <summary>Autorizacijos kodas</summary>
-	[JsonPropertyName("token")] public Guid? Token { get; set; }
+	[JsonPropertyName("ticket")] public Guid? Ticket { get; set; }
 	/// <summary>VIISP peradresavimas</summary>
 	[JsonPropertyName("authUrl")] public string? Url { get; set; }
 }
