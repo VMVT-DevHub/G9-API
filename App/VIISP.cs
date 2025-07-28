@@ -57,7 +57,7 @@ public class Auth {
 	/// <param name="ctx"></param>
 	/// <param name="r"></param>
 	/// <param name="ct"></param>
-	public static async Task<AuthRequest> GetAuth(HttpContext ctx, string? r, CancellationToken ct){
+	public static  Task<AuthRequest> GetAuth(HttpContext ctx, string? r, CancellationToken ct) {
 		LockIP(ctx);
 		if(!ct.IsCancellationRequested) {			
 			try {
@@ -73,15 +73,15 @@ public class Auth {
 						//temp fix (start)
 						ctx.Response.Cookies.Append("g9ret", r ?? Config.GetVal("Auth", "Return") ?? "/", new CookieOptions { Secure = true, IsEssential = true });
 						ctx.Response.Redirect(Config.GetVal("Auth", "Redirect") ?? "/");
-						return new();
+						return Task.FromResult(new AuthRequest());
 						//temp fix (end)
 
 						//return ath;
 					//} else return new  AuthRequestError(1004,"Peradresavimo kodo klaida",rsp);
 				//} else return new  AuthRequestError(1003,"Peradresavimo klaida",rsp);
-			} catch (Exception ex) { return new  AuthRequestError(1002,"Sujungimo klaida",ex.Message); }
+			} catch (Exception ex) { return Task.FromResult<AuthRequest>(new AuthRequestError(1002,"Sujungimo klaida",ex.Message)); }
 		}
-		return new AuthRequestError(0);
+		return Task.FromResult<AuthRequest>(new AuthRequestError(0));
 	}
 
 	/// <summary>Sesijos sukūrimas</summary>
@@ -253,5 +253,5 @@ public class AuthReturn {
 	/// <summary>Autorizacijos kodas</summary>
 	[JsonPropertyName("ticket")] public string? Ticket { get; set; }
 	/// <summary>VIISP adresas</summary>
-	[JsonPropertyName("customData")] public string? customData { get; set; }
+	[JsonPropertyName("customData")] public string? CustomData { get; set; }
 }
