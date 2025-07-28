@@ -94,16 +94,15 @@ public class Auth {
 	private static string FixCase(string? txt) => System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(txt?.ToLower()??"");
 
 	/// <summary>Vartotojo autorizacijos tikrinimas</summary>
-	/// <param name="token">Autorizacijos kodas</param>
 	/// <param name="ticket">Autorizacijos kodas</param>
 	/// <param name="ctx"></param>
 	/// <param name="ct"></param>
-	public static async Task<AuthRequest> GetUser(Guid token, Guid ticket, HttpContext ctx, CancellationToken ct){
-		if(Redirect.TryRemove(token, out var tck) && token!=ticket){
+	public static async Task<AuthRequest> GetUser(Guid ticket, HttpContext ctx, CancellationToken ct){
+		if(Redirect.TryRemove(ticket, out var tck)){
 			if(tck.IP==ctx.GetIP()){
 				if(tck.Timeout>DateTime.UtcNow){
 					try {
-						using var response = await HClient.GetAsync($"{token}", ct);
+						using var response = await HClient.GetAsync($"{ticket}", ct);
 						var rsp = await response.Content.ReadAsStringAsync(ct);
 						if(response.IsSuccessStatusCode){
 							var usr = JsonSerializer.Deserialize<AuthUser>(rsp);
@@ -114,7 +113,7 @@ public class Auth {
 					} catch (Exception ex) { return new AuthRequestError(1008,"Prisijungimo validacijos klaida",ex.Message); }
 				} else return new AuthRequestError(1007,"Baigėsi prisijungimui skirtas laikas",tck.Timeout.ToString("u"));
 			} else return new AuthRequestError(1006,"Neteisingas prisijungimo adresas",tck.Timeout.ToString("u"));
-		} else return new AuthRequestError(1005,"Neatpažinta autorizacija",token.ToString());
+		} else return new AuthRequestError(1005,"Neatpažinta autorizacija",ticket.ToString());
 	}
 
 	/// <summary>Gauti vartotojo duomenis pagal ID ar AK</summary>

@@ -48,12 +48,11 @@ public static class Auth {
 
 	/// <summary>Vartotojo prisijungimas</summary>
 	/// <param name="ctx">Http Context</param>
-	/// <param name="token">Viisp užklausos rektas</param>
 	/// <param name="ct">Cancellation Token</param>
-	public static async Task Evartai(HttpContext ctx, Guid token, CancellationToken ct){
+	public static async Task Evartai(HttpContext ctx, CancellationToken ct){
 		if(ctx.Request.HasFormContentType && ctx.Request.Form.TryGetValue("ticket", out var tks)){
 			if(Guid.TryParse(tks, out var ticket)){
-				var tkn = await VIISP.Auth.GetUser(token,ticket,ctx,ct);
+				var tkn = await VIISP.Auth.GetUser(ticket,ctx,ct);
 				if(tkn.Valid(ctx) && tkn?.User is not null) {
 					tkn = VIISP.Auth.SessionInit(tkn, ctx);				
 					if(tkn.Valid(ctx)) {
