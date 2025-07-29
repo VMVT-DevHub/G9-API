@@ -91,7 +91,7 @@ public class Auth {
 	public static AuthRequest SessionInit(AuthRequest req, HttpContext ctx){
 		var usr=req.User;
 		if(usr?.Id is not null){
-			var usl = User.Login(usr.Id??new(),FixCase(usr.FName),FixCase(usr.LName),usr.Email,usr.Phone,usr.CompanyCode,ctx);
+			var usl = User.Login(usr.Id??new(),FixCase(usr.FName),FixCase(usr.LName),usr.Email,usr.Phone,usr.Company?.Code,ctx);
 			if(usl is UserError err) return new AuthRequestError(err.Code,err.Message,JsonSerializer.Serialize(err.ErrorData));
 			Session.CreateSession(usl,ctx);
 			return req;
@@ -232,11 +232,22 @@ public class AuthUser {
 	[JsonPropertyName("email")] public string? Email { get; set; }
 	/// <summary>Tel. Nr.</summary>
 	[JsonPropertyName("phone")] public string? Phone { get; set; }
-	/// <summary>Juridinio asmens kodas</summary>
-	[JsonPropertyName("companyCode")] public string? CompanyCode { get; set; }
-	/// <summary>Juridinio asmens pavadinimas</summary>
-	[JsonPropertyName("companyName")] public string? CompanyName { get; set; }
+	/// <summary>Juridinio asmens duomanys</summary>
+	[JsonPropertyName("company")] public AuthCompany? Company { get; set; }
+}
 
+/// <summary>Juridinio asmens duomanys</summary>
+public class AuthCompany {
+	/// <summary>Juridinio asmens kodas</summary>
+	[JsonPropertyName("code")] public string? Code { get; set; }
+	/// <summary>Juridinio asmens pavadinimas</summary>
+	[JsonPropertyName("name")] public string? Name { get; set; }
+	/// <summary>Juridinio asmens el.paštas</summary>
+	[JsonPropertyName("email")] public string? Email { get; set; }
+	/// <summary>Juridinio asmens telefonas</summary>
+	[JsonPropertyName("phone")] public string? Phone { get; set; }
+	/// <summary>Juridinio asmens adresas</summary>
+	[JsonPropertyName("address")] public string? Address { get; set; }
 }
 
 
